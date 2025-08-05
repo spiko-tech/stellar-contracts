@@ -3,18 +3,12 @@
 extern crate std;
 
 use super::contract::{PermissionManager, PermissionManagerArgs, PermissionManagerClient};
-use soroban_sdk::{contract, symbol_short, testutils::Address as _, Address, Env, Symbol};
+use soroban_sdk::{contract, testutils::Address as _, Address, Env};
+
+use contracts_utils::role::{MINTER_ROLE, WHITELISTED_ROLE, WHITELISTER_ROLE};
 
 #[contract]
 struct MockContract;
-
-// Role constants from the contract
-const MINTER_ROLE: Symbol = symbol_short!("0");
-const PAUSER_ROLE: Symbol = symbol_short!("1");
-const BURNER_ROLE: Symbol = symbol_short!("2");
-const WHITELISTER_ROLE: Symbol = symbol_short!("3");
-const WHITELISTED_ROLE: Symbol = symbol_short!("4");
-const REDEMPTION_EXECUTOR_ROLE: Symbol = symbol_short!("5");
 
 #[test]
 fn test_admin_setup() {

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["contracts/*"]
+members = ["contracts/*", "contracts-utils"]
 
 [workspace.package]
 authors = []
