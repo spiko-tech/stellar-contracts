@@ -5,12 +5,11 @@
 //!
 //! For security issues, please contact: tech@spiko.tech
 
-
-use soroban_sdk::{Address, contract, contractimpl, Env, String, Symbol};
+use soroban_sdk::{contract, contractimpl, Address, Env, String, Symbol};
 use stellar_access::access_control::{self as access_control, AccessControl};
 use stellar_contract_utils::pausable::{self as pausable, Pausable};
 use stellar_contract_utils::upgradeable::UpgradeableInternal;
-use stellar_macros::{default_impl, only_role, Upgradeable, when_not_paused};
+use stellar_macros::{default_impl, only_role, when_not_paused, Upgradeable};
 use stellar_tokens::fungible::{Base, FungibleToken};
 
 #[derive(Upgradeable)]
@@ -19,8 +18,19 @@ pub struct Token;
 
 #[contractimpl]
 impl Token {
-    pub fn __constructor(e: &Env, admin: Address, pauser: Address, upgrader: Address, minter: Address) {
-        Base::set_metadata(e, 18, String::from_str(e, "Token"), String::from_str(e, "EUTBL"));
+    pub fn __constructor(
+        e: &Env,
+        admin: Address,
+        pauser: Address,
+        upgrader: Address,
+        minter: Address,
+    ) {
+        Base::set_metadata(
+            e,
+            18,
+            String::from_str(e, "Token"),
+            String::from_str(e, "EUTBL"),
+        );
         access_control::set_admin(e, &admin);
         access_control::grant_role_no_auth(e, &admin, &pauser, &Symbol::new(e, "pauser"));
         access_control::grant_role_no_auth(e, &admin, &upgrader, &Symbol::new(e, "upgrader"));

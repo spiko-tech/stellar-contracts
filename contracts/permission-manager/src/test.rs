@@ -3,9 +3,7 @@
 extern crate std;
 
 use super::contract::{PermissionManager, PermissionManagerArgs, PermissionManagerClient};
-use soroban_sdk::{
-    contract, symbol_short, testutils::Address as _, Address, Env, InvokeError, Symbol,
-};
+use soroban_sdk::{contract, symbol_short, testutils::Address as _, Address, Env, Symbol};
 
 #[contract]
 struct MockContract;
