@@ -30,9 +30,7 @@ impl Redemption {
 
     #[only_owner]
     pub fn remove_token(e: &Env, token_contract_address: Address) {
-        e.storage()
-            .persistent()
-            .set(&token_contract_address, &false);
+        e.storage().persistent().remove(&token_contract_address);
     }
 
     #[only_owner]
@@ -54,17 +52,29 @@ impl Redemption {
         match client.has_role(&address, &role) {
             Some(0) => {}
             _ => {
-                panic!("Wrong role: role should be {}", role)
+                panic!("Wrong role")
             }
         }
     }
 
-    pub fn on_redeem(e: &Env, token: Address, from: Address, amount: u128, salt: u128) {
-        let permission_manager: Address = e
+    pub fn on_redeem(
+        e: &Env,
+        caller: Address,
+        token: Address,
+        from: Address,
+        amount: u128,
+        salt: u128,
+    ) {
+        caller.require_auth();
+
+        let token_set: bool = e
             .storage()
             .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
+            .get(&token)
+            .expect("Caller should be token contract");
+        if !token_set {
+            panic!("Caller should be token contract");
+        }
     }
 }
 
