@@ -6,7 +6,6 @@ use super::contract::{Redemption, RedemptionArgs, RedemptionClient, RedemptionEn
 use soroban_sdk::{
     contract, symbol_short,
     testutils::{Address as _, Events},
-    vec,
     xdr::ToXdr,
     Address, Env, Vec,
 };
