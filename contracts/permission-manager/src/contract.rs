@@ -33,7 +33,17 @@ impl AccessControl for PermissionManager {
 
 impl UpgradeableInternal for PermissionManager {
     fn _require_auth(e: &Env, operator: &Address) {
-        access_control::ensure_role(e, operator, &Symbol::new(e, "admin"));
         operator.require_auth();
+
+        match access_control::get_admin(e) {
+            Some(admin) => {
+                if *operator != admin {
+                    panic!("Only admin can call this function");
+                }
+            }
+            None => {
+                panic!("Admin not set");
+            }
+        }
     }
 }
