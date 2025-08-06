@@ -99,7 +99,7 @@ fn assert_has_role(e: &Env, role: Symbol, address: Address) {
         .get(&PERMISSION_MANAGER_KEY)
         .expect("Permission manager not set");
 
-    let client = PermissionManagerClient::new(&e, &permission_manager);
+    let client = PermissionManagerClient::new(e, &permission_manager);
 
     match client.has_role(&address, &role) {
         Some(0) => {}
