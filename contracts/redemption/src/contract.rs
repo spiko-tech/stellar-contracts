@@ -110,27 +110,18 @@ fn assert_has_role(e: &Env, role: Symbol, address: Address) {
 }
 
 /*
-
-fn on_redeem(
-        ref self: TContractState,
-        token: ContractAddress,
-        from: ContractAddress,
-        amount: u256,
-        salt: felt252
-    );
-    fn execute_redemption(
-        ref self: TContractState,
-        token: ContractAddress,
-        from: ContractAddress,
-        amount: u256,
-        salt: felt252
-    );
-    fn cancel_redemption(
-        ref self: TContractState,
-        token: ContractAddress,
-        from: ContractAddress,
-        amount: u256,
-        salt: felt252
-    );
-
-    */
+fn execute_redemption(
+    ref self: TContractState,
+    token: ContractAddress,
+    from: ContractAddress,
+    amount: u256,
+    salt: felt252
+);
+fn cancel_redemption(
+    ref self: TContractState,
+    token: ContractAddress,
+    from: ContractAddress,
+    amount: u256,
+    salt: felt252
+);
+*/
