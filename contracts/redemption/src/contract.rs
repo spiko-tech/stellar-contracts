@@ -19,8 +19,15 @@ impl Redemption {
     }
 
     #[only_owner]
-    pub fn add_token_contract_address(e: &Env, token_contract_address: Address) {
+    pub fn add_token(e: &Env, token_contract_address: Address) {
         e.storage().persistent().set(&token_contract_address, &true);
+    }
+
+    #[only_owner]
+    pub fn remove_token(e: &Env, token_contract_address: Address) {
+        e.storage()
+            .persistent()
+            .set(&token_contract_address, &false);
     }
 
     #[only_owner]
@@ -75,7 +82,6 @@ fn on_redeem(
         amount: u256,
         salt: felt252
     );
-    fn add_token_contract_address(ref self: TContractState, contract_address: ContractAddress);
     fn remove_token_contract_address(ref self: TContractState, contract_address: ContractAddress);
 
     */
