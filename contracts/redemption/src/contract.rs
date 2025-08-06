@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
 // Compatible with OpenZeppelin Stellar Soroban Contracts ^0.4.1
 
-use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, Symbol};
+use soroban_sdk::{contract, contractclient, contractimpl, symbol_short, Address, Env, Symbol};
 use stellar_access::ownable::{self as ownable, Ownable};
-use stellar_contract_utils::upgradeable::UpgradeableInternal;
+use stellar_contract_utils::upgradeable::{Upgradeable, UpgradeableInternal};
 use stellar_macros::{default_impl, only_owner, Upgradeable};
+
+#[contractclient(name = "PermissionManagerClient")]
+pub trait PermissionManagerInterface {
+    fn has_role(account: &Address, role: &Symbol) -> Option<u32>;
+}
 
 #[derive(Upgradeable)]
 #[contract]
@@ -35,6 +40,31 @@ impl Redemption {
         e.storage()
             .persistent()
             .set(&PERMISSION_MANAGER_KEY, &permission_manager);
+    }
+
+    fn assert_has_role(e: &Env, role: Symbol, address: Address) {
+        let permission_manager: Address = e
+            .storage()
+            .persistent()
+            .get(&PERMISSION_MANAGER_KEY)
+            .expect("Permission manager not set");
+
+        let client = PermissionManagerClient::new(&e, &permission_manager);
+
+        match client.has_role(&address, &role) {
+            Some(0) => {}
+            _ => {
+                panic!("Wrong role: role should be {}", role)
+            }
+        }
+    }
+
+    pub fn on_redeem(e: &Env, token: Address, from: Address, amount: u128, salt: u128) {
+        let permission_manager: Address = e
+            .storage()
+            .persistent()
+            .get(&PERMISSION_MANAGER_KEY)
+            .expect("Permission manager not set");
     }
 }
 
@@ -82,6 +112,5 @@ fn on_redeem(
         amount: u256,
         salt: felt252
     );
-    fn remove_token_contract_address(ref self: TContractState, contract_address: ContractAddress);
 
     */
