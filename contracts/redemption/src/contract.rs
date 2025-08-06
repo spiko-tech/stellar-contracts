@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Compatible with OpenZeppelin Stellar Soroban Contracts ^0.4.1
 
-use soroban_sdk::{contract, contractclient, contractimpl, symbol_short, Address, Env, Symbol};
+use soroban_sdk::{
+    contract, contractclient, contractimpl, contracttype, symbol_short, Address, Env, Symbol,
+};
 use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::upgradeable::{Upgradeable, UpgradeableInternal};
 use stellar_macros::{default_impl, only_owner, Upgradeable};
@@ -16,6 +18,13 @@ pub trait PermissionManagerInterface {
 pub struct Redemption;
 
 pub const PERMISSION_MANAGER_KEY: Symbol = symbol_short!("PERM");
+
+pub const REDEMPTION_EVENT: Symbol = symbol_short!("redeem");
+pub const REDEMPTION_INITIATED_EVENT: Symbol = symbol_short!("init");
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RedemptionEntry(pub Address, pub Address, pub u128, pub u128);
 
 #[contractimpl]
 impl Redemption {
@@ -40,41 +49,25 @@ impl Redemption {
             .set(&PERMISSION_MANAGER_KEY, &permission_manager);
     }
 
-    fn assert_has_role(e: &Env, role: Symbol, address: Address) {
-        let permission_manager: Address = e
-            .storage()
-            .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
-
-        let client = PermissionManagerClient::new(&e, &permission_manager);
-
-        match client.has_role(&address, &role) {
-            Some(0) => {}
-            _ => {
-                panic!("Wrong role")
-            }
-        }
-    }
-
-    pub fn on_redeem(
-        e: &Env,
-        caller: Address,
-        token: Address,
-        from: Address,
-        amount: u128,
-        salt: u128,
-    ) {
-        caller.require_auth();
+    pub fn on_redeem(e: &Env, token: Address, from: Address, amount: u128, salt: u128) {
+        token.require_auth();
 
         let token_set: bool = e
             .storage()
             .persistent()
             .get(&token)
             .expect("Caller should be token contract");
-        if !token_set {
-            panic!("Caller should be token contract");
-        }
+        assert!(token_set, "Caller should be token contract");
+
+        let previous_redemption: Option<RedemptionEntry> = e.storage().persistent().get(&salt);
+        assert!(previous_redemption.is_none(), "Redemption already exists");
+
+        let redemption_entry = RedemptionEntry(token, from, amount, salt);
+        e.storage().persistent().set(&salt, &redemption_entry);
+        e.events().publish(
+            (REDEMPTION_EVENT, REDEMPTION_INITIATED_EVENT),
+            redemption_entry,
+        );
     }
 }
 
@@ -95,6 +88,23 @@ impl UpgradeableInternal for Redemption {
             None => {
                 panic!("Owner not set");
             }
+        }
+    }
+}
+
+fn assert_has_role(e: &Env, role: Symbol, address: Address) {
+    let permission_manager: Address = e
+        .storage()
+        .persistent()
+        .get(&PERMISSION_MANAGER_KEY)
+        .expect("Permission manager not set");
+
+    let client = PermissionManagerClient::new(&e, &permission_manager);
+
+    match client.has_role(&address, &role) {
+        Some(0) => {}
+        _ => {
+            panic!("Wrong role")
         }
     }
 }
