@@ -20,9 +20,9 @@ stellar keys public-key ACCOUNT_NAME
 To deploy a contract (put as many parameters as you need instead of admin)
 ```
 stellar contract deploy \
-  --source ACCOUNT_NAME \
+  --source nicolas \
   --network testnet \
-  --alias CONTRACT_NAME \
+  --alias permission_manager_v0_2 \
   --wasm target/wasm32v1-none/release/permission_manager.wasm \
   -- \
   --admin GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H
@@ -31,8 +31,8 @@ stellar contract deploy \
 To invoke a contract function
 ```
 stellar contract invoke \
-  --id CONTRACT_NAME \
-  --source ACCOUNT_NAME \
+  --id permission_manager_v0_2 \
+  --source alice \
   --network testnet \
   -- \
   get_admin
@@ -40,7 +40,7 @@ stellar contract invoke \
 
 To get the compiled wasm code for integration test
 ```
-stellar contract fetch --id permission_manager_v0_0 > permission_manager.wasm
+stellar contract fetch --id permission_manager_v0_2 > permission_manager.wasm
 ```
 
 ### Testnet deployment
@@ -52,4 +52,6 @@ My freighter address: `GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H`
 **Release**
 
 - Testnet
-    - v0_0: `CCAANR7HZNOXYZD7SXS2WQLV5BAOXSRZ7V4O43IANSB355QN2RNG7WVC`
+    - permission_manager_v0_2: `CADJ2TJ6M23OJWHX5DISWPFWEGYSWTQ5QMVWAURIBKXIUDUP6HEDCMML`
+    - permission_manager_v0_1: `CAGVGJ6MDBJI5KD62UISPCFP2Q5GFTDCUZUY23WVMCT7PQGQRVJXVTWU`
+    - permission_manager_v0_0: `CCAANR7HZNOXYZD7SXS2WQLV5BAOXSRZ7V4O43IANSB355QN2RNG7WVC`
