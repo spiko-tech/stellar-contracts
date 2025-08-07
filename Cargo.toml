@@ -14,6 +14,7 @@ stellar-tokens = "=0.4.1"
 stellar-access = "=0.4.1"
 stellar-contract-utils = "=0.4.1"
 stellar-macros = "=0.4.1"
+contracts-utils = { path = "contracts-utils" }
 
 [profile.release]
 opt-level = "z"
