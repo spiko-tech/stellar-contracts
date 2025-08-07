@@ -36,6 +36,26 @@ impl Redemption {
         ownable::set_owner(e, &owner);
     }
 
+    fn assert_has_role(e: &Env, account: &Address, role: &Symbol) {
+        let permission_manager: Address = e
+            .storage()
+            .persistent()
+            .get(&PERMISSION_MANAGER_KEY)
+            .expect("Permission manager not set");
+        let client: PermissionManagerClient<'_> =
+            PermissionManagerClient::new(e, &permission_manager);
+        assert!(client.has_role(account, role).is_some(), "Invalid role");
+    }
+
+    fn assert_token_registered(e: &Env, token: &Address) {
+        let token_set: bool = e
+            .storage()
+            .persistent()
+            .get(&token)
+            .expect("Caller should be token contract");
+        assert!(token_set, "Caller should be token contract");
+    }
+
     #[only_owner]
     pub fn add_token(e: &Env, token_contract_address: Address) {
         e.storage().persistent().set(&token_contract_address, &true);
@@ -55,13 +75,7 @@ impl Redemption {
 
     pub fn on_redeem(e: &Env, token: Address, from: Address, amount: u128, salt: u128) {
         token.require_auth();
-
-        let token_set: bool = e
-            .storage()
-            .persistent()
-            .get(&token)
-            .expect("Caller should be token contract");
-        assert!(token_set, "Caller should be token contract");
+        Self::assert_token_registered(e, &token);
 
         let previous_redemption: Option<RedemptionEntry> = e.storage().persistent().get(&salt);
         assert!(previous_redemption.is_none(), "Redemption already exists");
@@ -83,28 +97,8 @@ impl Redemption {
         salt: u128,
     ) {
         caller.require_auth();
-
-        let permission_manager: Address = e
-            .storage()
-            .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
-
-        let client: PermissionManagerClient<'_> =
-            PermissionManagerClient::new(e, &permission_manager);
-        assert!(
-            client
-                .has_role(&caller, &REDEMPTION_EXECUTOR_ROLE)
-                .is_some(),
-            "Caller should have redemption executor role"
-        );
-
-        let token_set: bool = e
-            .storage()
-            .persistent()
-            .get(&token)
-            .expect("Caller should be token contract");
-        assert!(token_set, "Caller should be token contract");
+        Self::assert_has_role(e, &caller, &REDEMPTION_EXECUTOR_ROLE);
+        Self::assert_token_registered(e, &token);
 
         let redemption_entry: RedemptionEntry = e
             .storage()
@@ -128,28 +122,8 @@ impl Redemption {
         salt: u128,
     ) {
         caller.require_auth();
-
-        let permission_manager: Address = e
-            .storage()
-            .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
-
-        let client: PermissionManagerClient<'_> =
-            PermissionManagerClient::new(e, &permission_manager);
-        assert!(
-            client
-                .has_role(&caller, &REDEMPTION_EXECUTOR_ROLE)
-                .is_some(),
-            "Caller should have redemption executor role"
-        );
-
-        let token_set: bool = e
-            .storage()
-            .persistent()
-            .get(&token)
-            .expect("Caller should be token contract");
-        assert!(token_set, "Caller should be token contract");
+        Self::assert_has_role(e, &caller, &REDEMPTION_EXECUTOR_ROLE);
+        Self::assert_token_registered(e, &token);
 
         let redemption_entry: RedemptionEntry = e
             .storage()
