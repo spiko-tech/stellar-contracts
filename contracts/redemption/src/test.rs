@@ -5,10 +5,10 @@ extern crate std;
 use super::contract::{Redemption, RedemptionArgs, RedemptionClient, RedemptionEntry};
 use contracts_utils::role::{WHITELISTED_ROLE, WHITELISTER_ROLE};
 use soroban_sdk::{
-    log, symbol_short,
+    symbol_short,
     testutils::{Address as _, Events},
     xdr::ToXdr,
-    Address, Env, String, Vec,
+    Address, Env, Vec,
 };
 
 mod permission_manager {
@@ -25,10 +25,22 @@ fn setup_env() -> Env {
 
 fn deploy_redemption(e: &Env) -> (Address, Address, RedemptionClient) {
     let owner: Address = Address::generate(&e);
-    let contract_address = e.register(Redemption, RedemptionArgs::__constructor(&owner.clone()));
-    let client = RedemptionClient::new(&e, &contract_address);
+    let redemption_address = e.register(Redemption, RedemptionArgs::__constructor(&owner.clone()));
+    let client = RedemptionClient::new(&e, &redemption_address);
 
-    (owner, contract_address, client)
+    (owner, redemption_address, client)
+}
+
+fn deploy_permission_manager(e: &Env) -> (Address, Address, permission_manager::Client<'_>) {
+    let admin: Address = Address::generate(&e);
+    let permission_manager_address = e.register(
+        permission_manager::WASM,
+        permission_manager::Args::__constructor(&admin.clone()),
+    );
+    let permission_manager_client =
+        permission_manager::Client::new(&e, &permission_manager_address);
+
+    (admin, permission_manager_address, permission_manager_client)
 }
 
 #[test]
@@ -142,7 +154,7 @@ fn test_on_redeem_should_fail_if_redemption_already_exists() {
 #[test]
 fn test_on_redeem_should_emit_a_redemption_initiated_event() {
     let e = setup_env();
-    let (_, contract_address, client) = deploy_redemption(&e);
+    let (_, redemption_address, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     let salt: u128 = 100;
@@ -153,7 +165,7 @@ fn test_on_redeem_should_emit_a_redemption_initiated_event() {
     let events = e.events().all();
     assert_eq!(Vec::len(&events), 1);
     let event = Vec::get(&events, 0).expect("Event should be present");
-    assert_eq!(event.0, contract_address);
+    assert_eq!(event.0, redemption_address);
     assert_eq!(Vec::len(&event.1), 2);
     let first_event_topic = Vec::get(&event.1, 0).expect("First event topic should be present");
     let second_event_topic = Vec::get(&event.1, 1).expect("Second event topic should be present");
@@ -180,17 +192,13 @@ fn test_execute_redemption_should_emit_a_redemption_executed_event() {
     let user: Address = Address::generate(&e);
     let salt: u128 = 100;
     client.add_token(&token);
-    let permission_manager_id = e.register(
-        permission_manager::WASM,
-        permission_manager::Args::__constructor(&owner.clone()),
-    );
-    let permission_manager_client = permission_manager::Client::new(&e, &permission_manager_id);
+    let (admin, _, permission_manager_client) = deploy_permission_manager(&e);
 
     let a = permission_manager_client
         .get_admin()
         .expect("Admin should be set");
 
-    assert_eq!(a, owner);
+    assert_eq!(a, admin);
 
     permission_manager_client.set_role_admin(&WHITELISTED_ROLE, &WHITELISTER_ROLE);
 
@@ -200,7 +208,7 @@ fn test_execute_redemption_should_emit_a_redemption_executed_event() {
     let events = e.events().all();
     assert_eq!(Vec::len(&events), 1);
     let event = Vec::get(&events, 0).expect("Event should be present");
-    assert_eq!(event.0, contract_address);
+    assert_eq!(event.0, redemption_address);
     assert_eq!(Vec::len(&event.1), 2);
     let first_event_topic = Vec::get(&event.1, 0).expect("First event topic should be present");
     let second_event_topic = Vec::get(&event.1, 1).expect("Second event topic should be present");
