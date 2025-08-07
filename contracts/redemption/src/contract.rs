@@ -110,6 +110,8 @@ impl Redemption {
             .persistent()
             .get(&salt)
             .expect("Redemption does not exist");
+        // TODO: add burn from token contract
+        e.storage().persistent().remove(&salt);
         e.events().publish(
             (REDEMPTION_EVENT, REDEMPTION_EXECUTED_EVENT),
             redemption_entry,
