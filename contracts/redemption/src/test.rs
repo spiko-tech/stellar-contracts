@@ -57,9 +57,9 @@ fn test_should_set_owner_on_constructor() {
 fn test_set_permission_manager_should_require_owner_auth() {
     let e = setup_env();
     let (owner, _, client) = deploy_redemption(&e);
-    let permission_manager: Address = Address::generate(&e);
+    let (_, permission_manager_address, _) = deploy_permission_manager(&e);
 
-    client.set_permission_manager(&permission_manager);
+    client.set_permission_manager(&permission_manager_address);
 
     let auths = e.auths();
     assert_eq!(auths.len(), 1);
