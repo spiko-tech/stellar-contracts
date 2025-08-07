@@ -41,6 +41,17 @@ impl Token {
         ownable::set_owner(e, &owner);
     }
 
+    fn assert_has_role(e: &Env, account: &Address, role: &Symbol) {
+        let permission_manager: Address = e
+            .storage()
+            .persistent()
+            .get(&PERMISSION_MANAGER_KEY)
+            .expect("Permission manager not set");
+        let client: PermissionManagerClient<'_> =
+            PermissionManagerClient::new(e, &permission_manager);
+        assert!(client.has_role(account, role).is_some(), "Invalid role");
+    }
+
     #[only_owner]
     pub fn set_permission_manager(e: &Env, permission_manager: Address) {
         e.storage()
@@ -56,40 +67,15 @@ impl Token {
     #[when_not_paused]
     pub fn mint(e: &Env, account: Address, amount: i128, caller: Address) {
         caller.require_auth();
-
-        let permission_manager: Address = e
-            .storage()
-            .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
-
-        let client: PermissionManagerClient<'_> =
-            PermissionManagerClient::new(e, &permission_manager);
-        assert!(
-            client.has_role(&caller, &MINTER_ROLE).is_some(),
-            "Caller should have minter role"
-        );
-
+        Self::assert_has_role(e, &caller, &MINTER_ROLE);
         Base::mint(e, &account, amount);
     }
 
     #[when_not_paused]
     pub fn redeem(e: &Env, amount: u128, salt: u128, caller: Address) {
         caller.require_auth();
-
         assert!(amount > 0, "Redemption amount should be more than zero");
-
-        let permission_manager: Address = e
-            .storage()
-            .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
-        let client: PermissionManagerClient<'_> =
-            PermissionManagerClient::new(e, &permission_manager);
-        assert!(
-            client.has_role(&caller, &WHITELISTED_ROLE).is_some(),
-            "Caller should have whitelisted role"
-        );
+        Self::assert_has_role(e, &caller, &WHITELISTED_ROLE);
 
         let redemption: Address = e
             .storage()
@@ -110,44 +96,15 @@ impl FungibleToken for Token {
     #[when_not_paused]
     fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
         from.require_auth();
-
-        let permission_manager: Address = e
-            .storage()
-            .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
-        let client: PermissionManagerClient<'_> =
-            PermissionManagerClient::new(e, &permission_manager);
-        assert!(
-            client.has_role(&from, &WHITELISTED_ROLE).is_some(),
-            "From address should have whitelisted role"
-        );
-        assert!(
-            client.has_role(&to, &WHITELISTED_ROLE).is_some(),
-            "To address should have whitelisted role"
-        );
-
+        Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
+        Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Base::transfer(e, &from, &to, amount);
     }
 
     #[when_not_paused]
     fn transfer_from(e: &Env, spender: Address, from: Address, to: Address, amount: i128) {
-        let permission_manager: Address = e
-            .storage()
-            .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
-        let client: PermissionManagerClient<'_> =
-            PermissionManagerClient::new(e, &permission_manager);
-        assert!(
-            client.has_role(&from, &WHITELISTED_ROLE).is_some(),
-            "From address should have whitelisted role"
-        );
-        assert!(
-            client.has_role(&to, &WHITELISTED_ROLE).is_some(),
-            "To address should have whitelisted role"
-        );
-
+        Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
+        Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Base::transfer_from(e, &spender, &from, &to, amount);
     }
 }
@@ -158,18 +115,7 @@ impl FungibleBurnable for Token {
     #[when_not_paused]
     fn burn(e: &Env, account: Address, amount: i128) {
         account.require_auth();
-
-        let permission_manager: Address = e
-            .storage()
-            .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
-        let client: PermissionManagerClient<'_> =
-            PermissionManagerClient::new(e, &permission_manager);
-        assert!(
-            client.has_role(&account, &BURNER_ROLE).is_some(),
-            "Account should have burner role"
-        );
+        Self::assert_has_role(e, &account, &BURNER_ROLE);
 
         let redemption: Address = e
             .storage()
@@ -203,39 +149,13 @@ impl Pausable for Token {
 
     fn pause(e: &Env, caller: Address) {
         caller.require_auth();
-
-        let permission_manager: Address = e
-            .storage()
-            .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
-
-        let client: PermissionManagerClient<'_> =
-            PermissionManagerClient::new(e, &permission_manager);
-        assert!(
-            client.has_role(&caller, &PAUSER_ROLE).is_some(),
-            "Caller should have pauser role"
-        );
-
+        Self::assert_has_role(e, &caller, &PAUSER_ROLE);
         pausable::pause(e);
     }
 
     fn unpause(e: &Env, caller: Address) {
         caller.require_auth();
-
-        let permission_manager: Address = e
-            .storage()
-            .persistent()
-            .get(&PERMISSION_MANAGER_KEY)
-            .expect("Permission manager not set");
-
-        let client: PermissionManagerClient<'_> =
-            PermissionManagerClient::new(e, &permission_manager);
-        assert!(
-            client.has_role(&caller, &PAUSER_ROLE).is_some(),
-            "Caller should have pauser role"
-        );
-
+        Self::assert_has_role(e, &caller, &PAUSER_ROLE);
         pausable::unpause(e);
     }
 }
