@@ -24,21 +24,20 @@ fn setup_env() -> Env {
 }
 
 fn deploy_redemption(e: &Env) -> (Address, Address, RedemptionClient) {
-    let owner: Address = Address::generate(&e);
+    let owner: Address = Address::generate(e);
     let redemption_address = e.register(Redemption, RedemptionArgs::__constructor(&owner.clone()));
-    let client = RedemptionClient::new(&e, &redemption_address);
+    let client = RedemptionClient::new(e, &redemption_address);
 
     (owner, redemption_address, client)
 }
 
 fn deploy_permission_manager(e: &Env) -> (Address, Address, permission_manager::Client<'_>) {
-    let admin: Address = Address::generate(&e);
+    let admin: Address = Address::generate(e);
     let permission_manager_address = e.register(
         permission_manager::WASM,
         permission_manager::Args::__constructor(&admin.clone()),
     );
-    let permission_manager_client =
-        permission_manager::Client::new(&e, &permission_manager_address);
+    let permission_manager_client = permission_manager::Client::new(e, &permission_manager_address);
     permission_manager_client.initialize();
 
     (admin, permission_manager_address, permission_manager_client)
