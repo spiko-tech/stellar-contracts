@@ -17,12 +17,12 @@ fn setup_env() -> Env {
 }
 
 fn deploy_permission_manager(e: &Env) -> (Address, PermissionManagerClient) {
-    let admin: Address = Address::generate(&e);
+    let admin: Address = Address::generate(e);
     let contract_address = e.register(
         PermissionManager,
         PermissionManagerArgs::__constructor(&admin.clone()),
     );
-    let client = PermissionManagerClient::new(&e, &contract_address);
+    let client = PermissionManagerClient::new(e, &contract_address);
     client.initialize();
 
     (admin, client)
