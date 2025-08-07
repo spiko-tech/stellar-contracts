@@ -2,7 +2,7 @@
 
 extern crate std;
 
-use super::contract::{Token, TokenArgs, TokenClient};
+use super::contract::{Token, TokenClient};
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 mod permission_manager {
@@ -23,17 +23,12 @@ fn setup_env() -> Env {
     e
 }
 
-fn deploy_token(
-    e: &Env,
-    name: String,
-    symbol: String,
-    decimals: u32,
-) -> (Address, Address, TokenClient) {
+fn deploy_token(e: &Env) -> (Address, Address, TokenClient) {
     let owner: Address = Address::generate(e);
-    let token_address = e.register(
-        Token,
-        TokenArgs::__constructor(&owner.clone(), &name.clone(), &symbol.clone(), &decimals),
-    );
+    let name: String = String::from_str(e, "Token");
+    let symbol: String = String::from_str(e, "EUTBL");
+    let decimals: u32 = 6;
+    let token_address = e.register(Token, (owner.clone(), name, symbol, decimals));
     let client = TokenClient::new(e, &token_address);
 
     (owner, token_address, client)
@@ -62,21 +57,40 @@ fn deploy_redemption(e: &Env) -> (Address, Address, redemption::Client<'_>) {
     (owner, redemption_address, redemption_client)
 }
 
-fn initial_state() {
-    let env = Env::default();
+#[test]
+fn test_should_set_owner_on_constructor() {
+    let e = setup_env();
+    let (owner, _, client) = deploy_token(&e);
 
-    let contract_addr = env.register(
-        Token,
-        (
-            Address::generate(&env),
-            Address::generate(&env),
-            Address::generate(&env),
-            Address::generate(&env),
-        ),
-    );
-    let client = TokenClient::new(&env, &contract_addr);
+    let fetched_owner = client.get_owner();
 
-    assert_eq!(client.name(), String::from_str(&env, "Token"));
+    assert_eq!(fetched_owner, Some(owner));
 }
 
-// Add more tests bellow
+#[test]
+fn test_set_permission_manager_should_require_owner_auth() {
+    let e = setup_env();
+    let (owner, _, client) = deploy_token(&e);
+    let (_, permission_manager_address, _) = deploy_permission_manager(&e);
+
+    client.set_permission_manager(&permission_manager_address);
+
+    let auths = e.auths();
+    assert_eq!(auths.len(), 1);
+    let (addr, _invocation) = &auths[0];
+    assert_eq!(addr, &owner);
+}
+
+#[test]
+fn test_set_redemption_should_require_owner_auth() {
+    let e = setup_env();
+    let (owner, _, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+
+    client.set_redemption(&redemption_address);
+
+    let auths = e.auths();
+    assert_eq!(auths.len(), 1);
+    let (addr, _invocation) = &auths[0];
+    assert_eq!(addr, &owner);
+}
