@@ -300,10 +300,10 @@
           "v0": {
             "topics": [
               {
-                "symbol": "redeem"
+                "symbol": "REDEEM"
               },
               {
-                "symbol": "init"
+                "symbol": "INIT"
               }
             ],
             "data": {

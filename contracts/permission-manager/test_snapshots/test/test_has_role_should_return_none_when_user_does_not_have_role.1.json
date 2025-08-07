@@ -75,7 +75,7 @@
                   "symbol": "RoleAdmin"
                 },
                 {
-                  "symbol": "4"
+                  "symbol": "WLISTED"
                 }
               ]
             },
@@ -95,13 +95,13 @@
                       "symbol": "RoleAdmin"
                     },
                     {
-                      "symbol": "4"
+                      "symbol": "WLISTED"
                     }
                   ]
                 },
                 "durability": "persistent",
                 "val": {
-                  "symbol": "3"
+                  "symbol": "WLISTER"
                 }
               }
             },

@@ -55,7 +55,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                 },
                 {
-                  "symbol": "5"
+                  "symbol": "REXECUTOR"
                 }
               ]
             }
@@ -516,7 +516,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                 },
                 {
-                  "symbol": "5"
+                  "symbol": "REXECUTOR"
                 }
               ]
             },
@@ -539,7 +539,7 @@
                       "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                     },
                     {
-                      "symbol": "5"
+                      "symbol": "REXECUTOR"
                     }
                   ]
                 },
@@ -578,7 +578,7 @@
                         "symbol": "role"
                       },
                       "val": {
-                        "symbol": "5"
+                        "symbol": "REXECUTOR"
                       }
                     }
                   ]
@@ -615,7 +615,7 @@
                             "symbol": "role"
                           },
                           "val": {
-                            "symbol": "5"
+                            "symbol": "REXECUTOR"
                           }
                         }
                       ]
@@ -643,7 +643,7 @@
                   "symbol": "RoleAccountsCount"
                 },
                 {
-                  "symbol": "5"
+                  "symbol": "REXECUTOR"
                 }
               ]
             },
@@ -663,7 +663,7 @@
                       "symbol": "RoleAccountsCount"
                     },
                     {
-                      "symbol": "5"
+                      "symbol": "REXECUTOR"
                     }
                   ]
                 },
@@ -839,10 +839,10 @@
           "v0": {
             "topics": [
               {
-                "symbol": "redeem"
+                "symbol": "REDEEM"
               },
               {
-                "symbol": "cancel"
+                "symbol": "CANCEL"
               }
             ],
             "data": {
