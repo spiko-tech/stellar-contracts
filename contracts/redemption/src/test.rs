@@ -14,7 +14,7 @@ use soroban_sdk::{
 mod permission_manager {
     use soroban_sdk::contractimport;
 
-    contractimport!(file = "./permission_manager.wasm");
+    contractimport!(file = "../../wasm/permission_manager.wasm");
 }
 
 fn setup_env() -> Env {
@@ -171,11 +171,11 @@ fn test_on_redeem_should_emit_a_redemption_initiated_event() {
     let second_event_topic = Vec::get(&event.1, 1).expect("Second event topic should be present");
     assert_eq!(
         first_event_topic.to_xdr(&e),
-        symbol_short!("redeem").to_xdr(&e)
+        symbol_short!("REDEEM").to_xdr(&e)
     );
     assert_eq!(
         second_event_topic.to_xdr(&e),
-        symbol_short!("init").to_xdr(&e)
+        symbol_short!("INIT").to_xdr(&e)
     );
     assert_eq!(
         event.2.to_xdr(&e),
@@ -209,11 +209,11 @@ fn test_execute_redemption_should_emit_a_redemption_executed_event() {
     let second_event_topic = Vec::get(&event.1, 1).expect("Second event topic should be present");
     assert_eq!(
         first_event_topic.to_xdr(&e),
-        symbol_short!("redeem").to_xdr(&e)
+        symbol_short!("REDEEM").to_xdr(&e)
     );
     assert_eq!(
         second_event_topic.to_xdr(&e),
-        symbol_short!("exec").to_xdr(&e)
+        symbol_short!("EXEC").to_xdr(&e)
     );
     assert_eq!(
         event.2.to_xdr(&e),
@@ -267,11 +267,11 @@ fn test_cancel_redemption_should_emit_a_redemption_cancelled_event() {
     let second_event_topic = Vec::get(&event.1, 1).expect("Second event topic should be present");
     assert_eq!(
         first_event_topic.to_xdr(&e),
-        symbol_short!("redeem").to_xdr(&e)
+        symbol_short!("REDEEM").to_xdr(&e)
     );
     assert_eq!(
         second_event_topic.to_xdr(&e),
-        symbol_short!("cancel").to_xdr(&e)
+        symbol_short!("CANCEL").to_xdr(&e)
     );
     assert_eq!(
         event.2.to_xdr(&e),

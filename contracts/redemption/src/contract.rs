@@ -21,10 +21,10 @@ pub struct Redemption;
 
 pub const PERMISSION_MANAGER_KEY: Symbol = symbol_short!("PERM");
 
-pub const REDEMPTION_EVENT: Symbol = symbol_short!("redeem");
-pub const REDEMPTION_INITIATED_EVENT: Symbol = symbol_short!("init");
-pub const REDEMPTION_EXECUTED_EVENT: Symbol = symbol_short!("exec");
-pub const REDEMPTION_CANCELLED_EVENT: Symbol = symbol_short!("cancel");
+pub const REDEMPTION_EVENT: Symbol = symbol_short!("REDEEM");
+pub const REDEMPTION_INITIATED_EVENT: Symbol = symbol_short!("INIT");
+pub const REDEMPTION_EXECUTED_EVENT: Symbol = symbol_short!("EXEC");
+pub const REDEMPTION_CANCELLED_EVENT: Symbol = symbol_short!("CANCEL");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]

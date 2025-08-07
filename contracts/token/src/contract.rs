@@ -5,36 +5,37 @@
 //!
 //! For security issues, please contact: tech@spiko.tech
 
-use soroban_sdk::{contract, contractimpl, Address, Env, String, Symbol};
-use stellar_access::access_control::{self as access_control, AccessControl};
+use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Symbol};
+use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::pausable::{self as pausable, Pausable};
 use stellar_contract_utils::upgradeable::UpgradeableInternal;
-use stellar_macros::{default_impl, only_role, when_not_paused, Upgradeable};
+use stellar_macros::{default_impl, only_owner, only_role, when_not_paused, Upgradeable};
 use stellar_tokens::fungible::{Base, FungibleToken};
 
 #[derive(Upgradeable)]
 #[contract]
 pub struct Token;
 
+pub const PERMISSION_MANAGER_KEY: Symbol = symbol_short!("PERM");
+pub const REDEMPTION_KEY: Symbol = symbol_short!("REDEMP");
+
 #[contractimpl]
 impl Token {
-    pub fn __constructor(
-        e: &Env,
-        admin: Address,
-        pauser: Address,
-        upgrader: Address,
-        minter: Address,
-    ) {
-        Base::set_metadata(
-            e,
-            18,
-            String::from_str(e, "Token"),
-            String::from_str(e, "EUTBL"),
-        );
-        access_control::set_admin(e, &admin);
-        access_control::grant_role_no_auth(e, &admin, &pauser, &Symbol::new(e, "pauser"));
-        access_control::grant_role_no_auth(e, &admin, &upgrader, &Symbol::new(e, "upgrader"));
-        access_control::grant_role_no_auth(e, &admin, &minter, &Symbol::new(e, "minter"));
+    pub fn __constructor(e: &Env, owner: Address, name: String, symbol: String, decimals: u32) {
+        Base::set_metadata(e, decimals, name, symbol);
+        ownable::set_owner(e, &owner);
+    }
+
+    #[only_owner]
+    pub fn set_permission_manager(e: &Env, permission_manager: Address) {
+        e.storage()
+            .persistent()
+            .set(&PERMISSION_MANAGER_KEY, &permission_manager);
+    }
+
+    #[only_owner]
+    pub fn set_redemption(e: &Env, redemption: Address) {
+        e.storage().persistent().set(&REDEMPTION_KEY, &redemption);
     }
 
     #[only_role(caller, "minter")]
@@ -66,8 +67,11 @@ impl FungibleToken for Token {
 
 impl UpgradeableInternal for Token {
     fn _require_auth(e: &Env, operator: &Address) {
-        access_control::ensure_role(e, operator, &Symbol::new(e, "upgrader"));
         operator.require_auth();
+        let owner = ownable::get_owner(e).expect("Owner not set");
+        if *operator != owner {
+            panic!("Only owner can call this function");
+        }
     }
 }
 
@@ -90,4 +94,12 @@ impl Pausable for Token {
 
 #[default_impl]
 #[contractimpl]
-impl AccessControl for Token {}
+impl Ownable for Token {}
+
+/*
+    fn mint(ref self: TContractState, recipient: ContractAddress, amount: u256);
+    fn burn(ref self: TContractState, amount: u256);
+    fn pause(ref self: TContractState);
+    fn unpause(ref self: TContractState);
+    fn redeem(ref self: TContractState, amount: u256, salt: felt252);
+*/
