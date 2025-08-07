@@ -3,7 +3,7 @@
 extern crate std;
 
 use super::contract::{Redemption, RedemptionArgs, RedemptionClient, RedemptionEntry};
-use contracts_utils::role::REDEMPTION_EXECUTOR_ROLE;
+use contracts_utils::role::{REDEMPTION_EXECUTOR_ROLE, WHITELISTED_ROLE};
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
@@ -187,7 +187,7 @@ fn test_on_redeem_should_emit_a_redemption_initiated_event() {
 #[test]
 fn test_execute_redemption_should_emit_a_redemption_executed_event() {
     let e = setup_env();
-    let (owner, redemption_address, client) = deploy_redemption(&e);
+    let (_, redemption_address, client) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
     client.set_permission_manager(&permission_manager_address);
@@ -220,4 +220,24 @@ fn test_execute_redemption_should_emit_a_redemption_executed_event() {
         event.2.to_xdr(&e),
         RedemptionEntry(token, user, 100, salt).to_xdr(&e)
     );
+}
+
+#[test]
+fn test_execute_redemption_fail_if_not_redemption_executor() {
+    let e = setup_env();
+    let (_, _, client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    let token: Address = Address::generate(&e);
+    let relayer: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let salt: u128 = 100;
+    permission_manager_client.grant_role(&admin, &relayer, &WHITELISTED_ROLE);
+    client.add_token(&token);
+
+    client.on_redeem(&token, &user, &100u128, &salt);
+    let result = client.try_execute_redemption(&relayer, &token, &user, &100u128, &salt);
+
+    assert!(result.is_err());
 }
