@@ -10,17 +10,28 @@ use contracts_utils::role::{MINTER_ROLE, WHITELISTED_ROLE, WHITELISTER_ROLE};
 #[contract]
 struct MockContract;
 
-#[test]
-fn test_admin_setup() {
-    let e = Env::default();
+fn setup_env() -> Env {
+    let e: Env = Env::default();
     e.mock_all_auths();
+    e
+}
 
+fn deploy_permission_manager(e: &Env) -> (Address, PermissionManagerClient) {
     let admin: Address = Address::generate(&e);
     let contract_address = e.register(
         PermissionManager,
         PermissionManagerArgs::__constructor(&admin.clone()),
     );
     let client = PermissionManagerClient::new(&e, &contract_address);
+    client.initialize();
+
+    (admin, client)
+}
+
+#[test]
+fn test_admin_setup() {
+    let e = setup_env();
+    let (admin, client) = deploy_permission_manager(&e);
 
     let fetched_admin = client.get_admin();
 
@@ -29,15 +40,8 @@ fn test_admin_setup() {
 
 #[test]
 fn test_has_role_should_return_some_when_user_has_role() {
-    let e = Env::default();
-    e.mock_all_auths();
-
-    let admin: Address = Address::generate(&e);
-    let contract_address = e.register(
-        PermissionManager,
-        PermissionManagerArgs::__constructor(&admin.clone()),
-    );
-    let client = PermissionManagerClient::new(&e, &contract_address);
+    let e = setup_env();
+    let (admin, client) = deploy_permission_manager(&e);
     let user: Address = Address::generate(&e);
 
     client.grant_role(&admin, &user, &WHITELISTED_ROLE);
@@ -48,15 +52,8 @@ fn test_has_role_should_return_some_when_user_has_role() {
 
 #[test]
 fn test_has_role_should_return_none_when_user_does_not_have_role() {
-    let e = Env::default();
-    e.mock_all_auths();
-
-    let admin: Address = Address::generate(&e);
-    let contract_address = e.register(
-        PermissionManager,
-        PermissionManagerArgs::__constructor(&admin.clone()),
-    );
-    let client = PermissionManagerClient::new(&e, &contract_address);
+    let e = setup_env();
+    let (_admin, client) = deploy_permission_manager(&e);
     let user: Address = Address::generate(&e);
 
     let has_role = client.has_role(&user, &WHITELISTED_ROLE);
@@ -66,15 +63,8 @@ fn test_has_role_should_return_none_when_user_does_not_have_role() {
 
 #[test]
 fn test_grant_role_whitelister_role_should_be_able_to_grant_whitelisted_role() {
-    let e = Env::default();
-    e.mock_all_auths();
-
-    let admin: Address = Address::generate(&e);
-    let contract_address = e.register(
-        PermissionManager,
-        PermissionManagerArgs::__constructor(&admin.clone()),
-    );
-    let client = PermissionManagerClient::new(&e, &contract_address);
+    let e = setup_env();
+    let (admin, client) = deploy_permission_manager(&e);
     let whitelister: Address = Address::generate(&e);
     let whitelisted: Address = Address::generate(&e);
 
@@ -87,15 +77,8 @@ fn test_grant_role_whitelister_role_should_be_able_to_grant_whitelisted_role() {
 
 #[test]
 fn test_grant_role_non_whitelister_role_should_not_be_able_to_grant_whitelisted_role_case_1() {
-    let e = Env::default();
-    e.mock_all_auths();
-
-    let admin: Address = Address::generate(&e);
-    let contract_address = e.register(
-        PermissionManager,
-        PermissionManagerArgs::__constructor(&admin.clone()),
-    );
-    let client = PermissionManagerClient::new(&e, &contract_address);
+    let e = setup_env();
+    let (_admin, client) = deploy_permission_manager(&e);
     let user: Address = Address::generate(&e);
     let non_whitelisted: Address = Address::generate(&e);
 
@@ -111,15 +94,8 @@ fn test_grant_role_non_whitelister_role_should_not_be_able_to_grant_whitelisted_
 
 #[test]
 fn test_grant_role_non_whitelister_role_should_not_be_able_to_grant_whitelisted_role_case_2() {
-    let e = Env::default();
-    e.mock_all_auths();
-
-    let admin: Address = Address::generate(&e);
-    let contract_address = e.register(
-        PermissionManager,
-        PermissionManagerArgs::__constructor(&admin.clone()),
-    );
-    let client = PermissionManagerClient::new(&e, &contract_address);
+    let e = setup_env();
+    let (admin, client) = deploy_permission_manager(&e);
     let user: Address = Address::generate(&e);
     let non_whitelisted: Address = Address::generate(&e);
 

@@ -16,6 +16,9 @@ pub struct PermissionManager;
 impl PermissionManager {
     pub fn __constructor(e: &Env, admin: Address) {
         access_control::set_admin(e, &admin);
+    }
+
+    pub fn initialize(e: &Env) {
         access_control::set_role_admin(e, &WHITELISTED_ROLE, &WHITELISTER_ROLE);
     }
 }
