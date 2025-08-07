@@ -17,6 +17,12 @@ mod permission_manager {
     contractimport!(file = "./permission_manager.wasm");
 }
 
+fn setup_env() -> Env {
+    let e: Env = Env::default();
+    e.mock_all_auths();
+    e
+}
+
 fn deploy_redemption(e: &Env) -> (Address, Address, RedemptionClient) {
     let owner: Address = Address::generate(&e);
     let contract_address = e.register(Redemption, RedemptionArgs::__constructor(&owner.clone()));
@@ -27,9 +33,7 @@ fn deploy_redemption(e: &Env) -> (Address, Address, RedemptionClient) {
 
 #[test]
 fn test_should_set_owner_on_constructor() {
-    let e = Env::default();
-    e.mock_all_auths();
-
+    let e = setup_env();
     let (owner, _, client) = deploy_redemption(&e);
 
     let fetched_owner = client.get_owner();
@@ -39,9 +43,7 @@ fn test_should_set_owner_on_constructor() {
 
 #[test]
 fn test_set_permission_manager_should_require_owner_auth() {
-    let e = Env::default();
-    e.mock_all_auths();
-
+    let e = setup_env();
     let (owner, _, client) = deploy_redemption(&e);
     let permission_manager: Address = Address::generate(&e);
 
@@ -55,9 +57,7 @@ fn test_set_permission_manager_should_require_owner_auth() {
 
 #[test]
 fn test_add_token_should_require_owner_auth() {
-    let e = Env::default();
-    e.mock_all_auths();
-
+    let e = setup_env();
     let (owner, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
 
@@ -71,9 +71,7 @@ fn test_add_token_should_require_owner_auth() {
 
 #[test]
 fn test_remove_token_should_require_owner_auth() {
-    let e = Env::default();
-    e.mock_all_auths();
-
+    let e = setup_env();
     let (owner, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
 
@@ -87,10 +85,8 @@ fn test_remove_token_should_require_owner_auth() {
 
 #[test]
 fn test_on_redeem_should_fail_if_token_is_not_set() {
-    let e = Env::default();
-    e.mock_all_auths();
-
-    let (owner, _, client) = deploy_redemption(&e);
+    let e = setup_env();
+    let (_, _, client) = deploy_redemption(&e);
     let non_token_contract: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
 
@@ -101,10 +97,8 @@ fn test_on_redeem_should_fail_if_token_is_not_set() {
 
 #[test]
 fn test_on_redeem_should_pass_if_token_is_set() {
-    let e = Env::default();
-    e.mock_all_auths();
-
-    let (owner, _, client) = deploy_redemption(&e);
+    let e = setup_env();
+    let (_, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     client.add_token(&token);
@@ -116,10 +110,8 @@ fn test_on_redeem_should_pass_if_token_is_set() {
 
 #[test]
 fn test_on_redeem_should_require_token_auth() {
-    let e = Env::default();
-    e.mock_all_auths();
-
-    let (owner, _, client) = deploy_redemption(&e);
+    let e = setup_env();
+    let (_, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     client.add_token(&token);
@@ -134,10 +126,8 @@ fn test_on_redeem_should_require_token_auth() {
 
 #[test]
 fn test_on_redeem_should_fail_if_redemption_already_exists() {
-    let e = Env::default();
-    e.mock_all_auths();
-
-    let (owner, _, client) = deploy_redemption(&e);
+    let e = setup_env();
+    let (_, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     let salt: u128 = 100;
@@ -151,9 +141,7 @@ fn test_on_redeem_should_fail_if_redemption_already_exists() {
 
 #[test]
 fn test_on_redeem_should_emit_a_redemption_initiated_event() {
-    let e = Env::default();
-    e.mock_all_auths();
-
+    let e = setup_env();
     let (_, contract_address, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
@@ -185,9 +173,7 @@ fn test_on_redeem_should_emit_a_redemption_initiated_event() {
 
 #[test]
 fn test_execute_redemption_should_emit_a_redemption_executed_event() {
-    let e = Env::default();
-    e.mock_all_auths();
-
+    let e = setup_env();
     let (owner, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let relayer: Address = Address::generate(&e);
