@@ -3,7 +3,7 @@
 extern crate std;
 
 use super::contract::{Redemption, RedemptionArgs, RedemptionClient, RedemptionEntry};
-use contracts_utils::role::{WHITELISTED_ROLE, WHITELISTER_ROLE};
+use contracts_utils::role::REDEMPTION_EXECUTOR_ROLE;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
@@ -39,6 +39,7 @@ fn deploy_permission_manager(e: &Env) -> (Address, Address, permission_manager::
     );
     let permission_manager_client =
         permission_manager::Client::new(&e, &permission_manager_address);
+    permission_manager_client.initialize();
 
     (admin, permission_manager_address, permission_manager_client)
 }
@@ -186,23 +187,18 @@ fn test_on_redeem_should_emit_a_redemption_initiated_event() {
 #[test]
 fn test_execute_redemption_should_emit_a_redemption_executed_event() {
     let e = setup_env();
-    let (owner, _, client) = deploy_redemption(&e);
+    let (owner, redemption_address, client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
     let token: Address = Address::generate(&e);
     let relayer: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     let salt: u128 = 100;
+    permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
     client.add_token(&token);
-    let (admin, _, permission_manager_client) = deploy_permission_manager(&e);
 
-    let a = permission_manager_client
-        .get_admin()
-        .expect("Admin should be set");
-
-    assert_eq!(a, admin);
-
-    permission_manager_client.set_role_admin(&WHITELISTED_ROLE, &WHITELISTER_ROLE);
-
-    /*
+    client.on_redeem(&token, &user, &100u128, &salt);
     client.execute_redemption(&relayer, &token, &user, &100u128, &salt);
 
     let events = e.events().all();
@@ -218,11 +214,10 @@ fn test_execute_redemption_should_emit_a_redemption_executed_event() {
     );
     assert_eq!(
         second_event_topic.to_xdr(&e),
-        symbol_short!("init").to_xdr(&e)
+        symbol_short!("exec").to_xdr(&e)
     );
     assert_eq!(
         event.2.to_xdr(&e),
         RedemptionEntry(token, user, 100, salt).to_xdr(&e)
     );
-    */
 }
