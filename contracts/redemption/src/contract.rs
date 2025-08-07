@@ -172,16 +172,9 @@ impl Ownable for Redemption {}
 impl UpgradeableInternal for Redemption {
     fn _require_auth(e: &Env, operator: &Address) {
         operator.require_auth();
-
-        match ownable::get_owner(e) {
-            Some(owner) => {
-                if *operator != owner {
-                    panic!("Only owner can call this function");
-                }
-            }
-            None => {
-                panic!("Owner not set");
-            }
+        let owner = ownable::get_owner(e).expect("Owner not set");
+        if *operator != owner {
+            panic!("Only owner can call this function");
         }
     }
 }

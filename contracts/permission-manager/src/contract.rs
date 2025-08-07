@@ -37,16 +37,9 @@ impl AccessControl for PermissionManager {
 impl UpgradeableInternal for PermissionManager {
     fn _require_auth(e: &Env, operator: &Address) {
         operator.require_auth();
-
-        match access_control::get_admin(e) {
-            Some(admin) => {
-                if *operator != admin {
-                    panic!("Only admin can call this function");
-                }
-            }
-            None => {
-                panic!("Admin not set");
-            }
+        let admin = access_control::get_admin(e).expect("Admin not set");
+        if *operator != admin {
+            panic!("Only admin can call this function");
         }
     }
 }
