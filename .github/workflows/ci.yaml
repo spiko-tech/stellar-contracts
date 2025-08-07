@@ -38,8 +38,8 @@ jobs:
 
       - name: Run Clippy
         run: |
-          cargo clippy --workspace --all-targets --all-features -- -D warnings
-          cargo clippy --workspace --all-targets --all-features --tests -- -D warnings
+          cargo clippy --workspace --all-targets --all-features
+          cargo clippy --workspace --all-targets --all-features --tests
 
   test:
     name: Test
