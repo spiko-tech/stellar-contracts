@@ -1,3 +1,6 @@
+#![no_std]
+#![allow(dead_code)]
+
 pub mod role {
     use soroban_sdk::{symbol_short, Symbol};
 
