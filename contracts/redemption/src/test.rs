@@ -241,3 +241,61 @@ fn test_execute_redemption_fail_if_not_redemption_executor() {
 
     assert!(result.is_err());
 }
+
+#[test]
+fn test_cancel_redemption_should_emit_a_redemption_cancelled_event() {
+    let e = setup_env();
+    let (_, redemption_address, client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    let token: Address = Address::generate(&e);
+    let relayer: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let salt: u128 = 100;
+    permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
+    client.add_token(&token);
+
+    client.on_redeem(&token, &user, &100u128, &salt);
+    client.cancel_redemption(&relayer, &token, &user, &100u128, &salt);
+
+    let events = e.events().all();
+    assert_eq!(Vec::len(&events), 1);
+    let event = Vec::get(&events, 0).expect("Event should be present");
+    assert_eq!(event.0, redemption_address);
+    assert_eq!(Vec::len(&event.1), 2);
+    let first_event_topic = Vec::get(&event.1, 0).expect("First event topic should be present");
+    let second_event_topic = Vec::get(&event.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_event_topic.to_xdr(&e),
+        symbol_short!("redeem").to_xdr(&e)
+    );
+    assert_eq!(
+        second_event_topic.to_xdr(&e),
+        symbol_short!("cancel").to_xdr(&e)
+    );
+    assert_eq!(
+        event.2.to_xdr(&e),
+        RedemptionEntry(token, user, 100, salt).to_xdr(&e)
+    );
+}
+
+#[test]
+fn test_cancel_redemption_fail_if_not_redemption_executor() {
+    let e = setup_env();
+    let (_, _, client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    let token: Address = Address::generate(&e);
+    let relayer: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let salt: u128 = 100;
+    permission_manager_client.grant_role(&admin, &relayer, &WHITELISTED_ROLE);
+    client.add_token(&token);
+
+    client.on_redeem(&token, &user, &100u128, &salt);
+    let result = client.try_cancel_redemption(&relayer, &token, &user, &100u128, &salt);
+
+    assert!(result.is_err());
+}

@@ -24,6 +24,7 @@ pub const PERMISSION_MANAGER_KEY: Symbol = symbol_short!("PERM");
 pub const REDEMPTION_EVENT: Symbol = symbol_short!("redeem");
 pub const REDEMPTION_INITIATED_EVENT: Symbol = symbol_short!("init");
 pub const REDEMPTION_EXECUTED_EVENT: Symbol = symbol_short!("exec");
+pub const REDEMPTION_CANCELLED_EVENT: Symbol = symbol_short!("cancel");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -117,6 +118,51 @@ impl Redemption {
             redemption_entry,
         );
     }
+
+    pub fn cancel_redemption(
+        e: &Env,
+        caller: Address,
+        token: Address,
+        _from: Address,
+        _amount: u128,
+        salt: u128,
+    ) {
+        caller.require_auth();
+
+        let permission_manager: Address = e
+            .storage()
+            .persistent()
+            .get(&PERMISSION_MANAGER_KEY)
+            .expect("Permission manager not set");
+
+        let client: PermissionManagerClient<'_> =
+            PermissionManagerClient::new(e, &permission_manager);
+        assert!(
+            client
+                .has_role(&caller, &REDEMPTION_EXECUTOR_ROLE)
+                .is_some(),
+            "Caller should have redemption executor role"
+        );
+
+        let token_set: bool = e
+            .storage()
+            .persistent()
+            .get(&token)
+            .expect("Caller should be token contract");
+        assert!(token_set, "Caller should be token contract");
+
+        let redemption_entry: RedemptionEntry = e
+            .storage()
+            .persistent()
+            .get(&salt)
+            .expect("Redemption does not exist");
+        // TODO: add transfer from token contract
+        e.storage().persistent().remove(&salt);
+        e.events().publish(
+            (REDEMPTION_EVENT, REDEMPTION_CANCELLED_EVENT),
+            redemption_entry,
+        );
+    }
 }
 
 #[default_impl]
@@ -139,20 +185,3 @@ impl UpgradeableInternal for Redemption {
         }
     }
 }
-
-/*
-fn execute_redemption(
-    ref self: TContractState,
-    token: ContractAddress,
-    from: ContractAddress,
-    amount: u256,
-    salt: felt252
-);
-fn cancel_redemption(
-    ref self: TContractState,
-    token: ContractAddress,
-    from: ContractAddress,
-    amount: u256,
-    salt: felt252
-);
-*/
