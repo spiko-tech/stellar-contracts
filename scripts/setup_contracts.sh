@@ -36,6 +36,273 @@ UKTBL_ADDRESS=$(jq -r '.tokens.UKTBL' "$JSON_FILE")
 SPKCC_ADDRESS=$(jq -r '.tokens.SPKCC' "$JSON_FILE")
 EUR_SPKCC_ADDRESS=$(jq -r '.tokens.eurSPKCC' "$JSON_FILE")
 
+initialize_permission_manager() {
+    set -x
+    stellar contract invoke \
+      --id $PERMISSION_MANAGER_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network ${NETWORK} \
+      -- \
+      initialize
+    { set +x; } 2>/dev/null
+}
+
+set_permission_manager_on_redemption() {
+    set -x
+    stellar contract invoke \
+      --id $REDEMPTION_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network testnet \
+      -- \
+      set_permission_manager \
+      --permission_manager $PERMISSION_MANAGER_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+add_eutbl_to_redemption() {
+    set -x
+    stellar contract invoke \
+      --id $REDEMPTION_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      add_token \
+      --token_contract_address $EUTBL_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+add_ustbl_to_redemption() {
+    set -x
+    stellar contract invoke \
+      --id $REDEMPTION_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      add_token \
+      --token_contract_address $USTBL_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+add_eur_ustbl_to_redemption() {
+    set -x
+    stellar contract invoke \
+      --id $REDEMPTION_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      add_token \
+      --token_contract_address $EUR_USTBL_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+add_uktbl_to_redemption() {
+    set -x
+    stellar contract invoke \
+      --id $REDEMPTION_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      add_token \
+      --token_contract_address $UKTBL_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+add_spkcc_to_redemption() {
+    set -x
+    stellar contract invoke \
+      --id $REDEMPTION_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      add_token \
+      --token_contract_address $SPKCC_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+add_eur_spkcc_to_redemption() {
+    set -x
+    stellar contract invoke \
+      --id $REDEMPTION_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      add_token \
+      --token_contract_address $EUR_SPKCC_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_permission_manager_on_eutbl() {
+    set -x
+    stellar contract invoke \
+      --id $EUTBL_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_permission_manager \
+      --permission_manager $PERMISSION_MANAGER_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_redemption_on_eutbl() {
+    set -x
+    stellar contract invoke \
+      --id $EUTBL_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_redemption \
+      --redemption $REDEMPTION_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_permission_manager_on_ustbl() {
+    set -x
+    stellar contract invoke \
+      --id $USTBL_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_permission_manager \
+      --permission_manager $PERMISSION_MANAGER_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_redemption_on_ustbl() {
+    set -x
+    stellar contract invoke \
+      --id $USTBL_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_redemption \
+      --redemption $REDEMPTION_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_permission_manager_on_eur_ustbl() {
+    set -x
+    stellar contract invoke \
+      --id $EUR_USTBL_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_permission_manager \
+      --permission_manager $PERMISSION_MANAGER_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_redemption_on_eur_ustbl() {
+    set -x
+    stellar contract invoke \
+      --id $EUR_USTBL_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_redemption \
+      --redemption $REDEMPTION_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_permission_manager_on_uktbl() {
+    set -x
+    stellar contract invoke \
+      --id $UKTBL_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_permission_manager \
+      --permission_manager $PERMISSION_MANAGER_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_redemption_on_uktbl() {
+    set -x
+    stellar contract invoke \
+      --id $UKTBL_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_redemption \
+      --redemption $REDEMPTION_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_permission_manager_on_spkcc() {
+    set -x
+    stellar contract invoke \
+      --id $SPKCC_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_permission_manager \
+      --permission_manager $PERMISSION_MANAGER_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_redemption_on_spkcc() {
+    set -x
+    stellar contract invoke \
+      --id $SPKCC_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_redemption \
+      --redemption $REDEMPTION_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_permission_manager_on_eur_spkcc() {
+    set -x
+    stellar contract invoke \
+      --id $EUR_SPKCC_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_permission_manager \
+      --permission_manager $PERMISSION_MANAGER_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_redemption_on_eur_spkcc() {
+    set -x
+    stellar contract invoke \
+      --id $EUR_SPKCC_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_redemption \
+      --redemption $REDEMPTION_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+give_whitelisted_role_to_redemption() {
+    set -x
+    stellar contract invoke \
+      --id $PERMISSION_MANAGER_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      grant_role \
+      --caller $STELLAR_PROFILE \
+      --account $REDEMPTION_ADDRESS \
+      --role WLISTED
+    { set +x; } 2>/dev/null
+}
+
+give_redemption_executor_role_to_redemption() {
+    set -x
+    stellar contract invoke \
+      --id $PERMISSION_MANAGER_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      grant_role \
+      --caller $STELLAR_PROFILE \
+      --account $REDEMPTION_ADDRESS \
+      --role REXECUTOR
+    { set +x; } 2>/dev/null
+}
+
 echo "🌍 Environment: $ENVIRONMENT"
 echo "🌍 Stellar Profile: $STELLAR_PROFILE"
 echo "📋 Loaded Addresses:"
@@ -50,249 +317,68 @@ echo "  eurSPKCC: $EUR_SPKCC_ADDRESS"
 
 echo "🔄 Setup Permission Manager"
 echo "---> Initialize"
-set -x
-stellar contract invoke \
-  --id $PERMISSION_MANAGER_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network ${NETWORK} \
-  -- \
-  initialize
-{ set +x; } 2>/dev/null
+initialize_permission_manager
 
 echo "🔄 Setup Redemption"
 echo "---> Set Permission Manager"
-set -x
-stellar contract invoke \
-  --id $REDEMPTION_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network testnet \
-  -- \
-  set_permission_manager \
-  --permission_manager $PERMISSION_MANAGER_ADDRESS
-{ set +x; } 2>/dev/null
+set_permission_manager_on_redemption
 
 echo "---> Add Token EUTBL"
-set -x
-stellar contract invoke \
-  --id $REDEMPTION_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  add_token \
-  --token_contract_address $EUTBL_ADDRESS
-{ set +x; } 2>/dev/null
+add_eutbl_to_redemption
 
 echo "---> Add Token USTBL"
-set -x
-stellar contract invoke \
-  --id $REDEMPTION_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  add_token \
-  --token_contract_address $USTBL_ADDRESS
-{ set +x; } 2>/dev/null
+add_ustbl_to_redemption
 
 echo "---> Add Token EUR_USTBL"
-set -x
-stellar contract invoke \
-  --id $REDEMPTION_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  add_token \
-  --token_contract_address $EUR_USTBL_ADDRESS
-{ set +x; } 2>/dev/null
+add_eur_ustbl_to_redemption
 
 echo "---> Add Token UKTBL"
-set -x
-stellar contract invoke \
-  --id $REDEMPTION_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  add_token \
-  --token_contract_address $UKTBL_ADDRESS
-{ set +x; } 2>/dev/null
+add_uktbl_to_redemption
 
 echo "---> Add Token SPKCC"
-set -x
-stellar contract invoke \
-  --id $REDEMPTION_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  add_token \
-  --token_contract_address $SPKCC_ADDRESS
-{ set +x; } 2>/dev/null
+add_spkcc_to_redemption
 
 echo "---> Add Token EUR_SPKCC"
-set -x
-stellar contract invoke \
-  --id $REDEMPTION_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  add_token \
-  --token_contract_address $EUR_SPKCC_ADDRESS
-{ set +x; } 2>/dev/null
+add_eur_spkcc_to_redemption
 
 echo "🔄 Setup EUTBL"
 echo "---> Set Permission Manager"
-set -x
-stellar contract invoke \
-  --id $EUTBL_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_permission_manager \
-  --permission_manager $PERMISSION_MANAGER_ADDRESS
-{ set +x; } 2>/dev/null
+set_permission_manager_on_eutbl
 echo "---> Set Redemption"
-set -x
-stellar contract invoke \
-  --id $EUTBL_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_redemption \
-  --redemption $REDEMPTION_ADDRESS
-{ set +x; } 2>/dev/null
+set_redemption_on_eutbl
 
 echo "🔄 Setup USTBL"
 echo "---> Set Permission Manager"
-set -x
-stellar contract invoke \
-  --id $USTBL_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_permission_manager \
-  --permission_manager $PERMISSION_MANAGER_ADDRESS
-{ set +x; } 2>/dev/null
+set_permission_manager_on_ustbl
 echo "---> Set Redemption"
-set -x
-stellar contract invoke \
-  --id $USTBL_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_redemption \
-  --redemption $REDEMPTION_ADDRESS
-{ set +x; } 2>/dev/null
+set_redemption_on_ustbl
 
 echo "🔄 Setup EUR_USTBL"
 echo "---> Set Permission Manager"
-set -x
-stellar contract invoke \
-  --id $EUR_USTBL_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_permission_manager \
-  --permission_manager $PERMISSION_MANAGER_ADDRESS
-{ set +x; } 2>/dev/null
+set_permission_manager_on_eur_ustbl
 echo "---> Set Redemption"
-set -x
-stellar contract invoke \
-  --id $EUR_USTBL_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_redemption \
-  --redemption $REDEMPTION_ADDRESS
-{ set +x; } 2>/dev/null
+set_redemption_on_eur_ustbl
 
 echo "🔄 Setup UKTBL"
 echo "---> Set Permission Manager"
-set -x
-stellar contract invoke \
-  --id $UKTBL_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_permission_manager \
-  --permission_manager $PERMISSION_MANAGER_ADDRESS
-{ set +x; } 2>/dev/null
+set_permission_manager_on_uktbl
 echo "---> Set Redemption"
-set -x
-stellar contract invoke \
-  --id $UKTBL_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_redemption \
-  --redemption $REDEMPTION_ADDRESS
-{ set +x; } 2>/dev/null
+set_redemption_on_uktbl
 
 echo "🔄 Setup SPKCC"
 echo "---> Set Permission Manager"
-set -x
-stellar contract invoke \
-  --id $SPKCC_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_permission_manager \
-  --permission_manager $PERMISSION_MANAGER_ADDRESS
-{ set +x; } 2>/dev/null
+set_permission_manager_on_spkcc
 echo "---> Set Redemption"
-set -x
-stellar contract invoke \
-  --id $SPKCC_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_redemption \
-  --redemption $REDEMPTION_ADDRESS
-{ set +x; } 2>/dev/null
+set_redemption_on_spkcc
 
 echo "🔄 Setup EUR_SPKCC"
 echo "---> Set Permission Manager"
-set -x
-stellar contract invoke \
-  --id $EUR_SPKCC_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_permission_manager \
-  --permission_manager $PERMISSION_MANAGER_ADDRESS
-{ set +x; } 2>/dev/null
+set_permission_manager_on_eur_spkcc
 echo "---> Set Redemption"
-set -x
-stellar contract invoke \
-  --id $EUR_SPKCC_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  set_redemption \
-  --redemption $REDEMPTION_ADDRESS
-{ set +x; } 2>/dev/null
-
+set_redemption_on_eur_spkcc
 
 echo "🔄 Setup Role"
 echo "---> Give WHITELISTED_ROLE to redemption"
-set -x
-stellar contract invoke \
-  --id $PERMISSION_MANAGER_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  grant_role \
-  --caller $STELLAR_PROFILE \
-  --account $REDEMPTION_ADDRESS \
-  --role WLISTED
-{ set +x; } 2>/dev/null
+give_whitelisted_role_to_redemption
 echo "---> Give REDEMPTION_EXECUTOR_ROLE to redemption"
-set -x
-stellar contract invoke \
-  --id $PERMISSION_MANAGER_ADDRESS \
-  --source $STELLAR_PROFILE \
-  --network $NETWORK \
-  -- \
-  grant_role \
-  --caller $STELLAR_PROFILE \
-  --account $REDEMPTION_ADDRESS \
-  --role REXECUTOR
-{ set +x; } 2>/dev/null
-
+give_redemption_executor_role_to_redemption
