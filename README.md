@@ -118,121 +118,16 @@ stellar contract deploy \
 
 ### Setup
 
-#### Permission Manager
+Use the custom setup script.
+It is mandatory workflow for an operational setup.
+Use it as an inspiration to craft your own command.
 ```
-stellar contract invoke \
-  --id permission_manager_dev \
-  --source nicolas \
-  --network testnet \
-  -- \
-  initialize
-```
-
-#### Redemption
-```
-stellar contract invoke \
-  --id redemption_dev \
-  --source nicolas \
-  --network testnet \
-  -- \
-  set_permission_manager \
-  --permission_manager CA2OGL5LVNIMZ35L4PUS342ZQX2NW2OX62SYBSCEPXYXNXXYDBDZDLU6
-
-stellar contract invoke \
-  --id redemption_dev \
-  --source nicolas \
-  --network testnet \
-  -- \
-  add_token \
-  --token_contract_address CBWO2NZMJMFCAQGFL6P3OEL3XU2UNSYK4X3DKOJJYBWFI2SDLKQJ2J4E
-
-stellar contract invoke \
-  --id redemption_dev \
-  --source nicolas \
-  --network testnet \
-  -- \
-  add_token \
-  --token_contract_address CDPSCPGHVF5SQZXPFHNY365LVS3SZIIMNJJPCJDVZB3FOK4ZCVRUQYG3
-
-stellar contract invoke \
-  --id redemption_dev \
-  --source nicolas \
-  --network testnet \
-  -- \
-  add_token \
-  --token_contract_address CCSDGXMVAJ454NALIXYN7H3ALF25W4AF7N2USXXNGI2ECCANEV6BGY53
-
-stellar contract invoke \
-  --id redemption_dev \
-  --source nicolas \
-  --network testnet \
-  -- \
-  add_token \
-  --token_contract_address CCOYYP3NB25R3ST75WYPQRG2XWJ536SUBWE4YCXO7FUUFFEPYTYOSBSB
-
-stellar contract invoke \
-  --id redemption_dev \
-  --source nicolas \
-  --network testnet \
-  -- \
-  add_token \
-  --token_contract_address CD5XCPVVUOXU6SY7HG62Q6VC2MBYGCZ54UOOFTFEKMGOF34DZE7Z6I3C
-
-stellar contract invoke \
-  --id redemption_dev \
-  --source nicolas \
-  --network testnet \
-  -- \
-  add_token \
-  --token_contract_address CBGQXPX3VYDWWJQUKCEUDGVJPXENSWAOLRDIERLA44V5FPFTWBT4AALQ
-```
-
-#### Token
-```
-
-```
-
-To invoke a contract function
-```
-stellar contract invoke \
-  --id permission_manager_v0_3 \
-  --source alice \
-  --network testnet \
-  -- \
-  get_admin
-
-stellar contract invoke \
-  --id permission_manager_v0_3 \
-  --source nicolas \
-  --network testnet \
-  -- \
-  grant_role \
-  --caller GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H \
-  --account GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H \
-  --role WLISTER
-
-stellar contract invoke \
-  --id permission_manager_v0_3 \
-  --source nicolas \
-  --network testnet \
-  -- \
-  has_role \
-  --account GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H \
-  --role WLISTER
-
-// To get help on a command
-stellar contract invoke \
-  --id permission_manager_v0_3 \
-  --source alice \
-  --network testnet \
-  -- \
-  has_role \
-  --help
+./scripts/setup_contracts.sh dev nicolas
 ```
 
 ### Utils
 
 To get the compiled wasm code for integration test
 ```
-stellar contract fetch --id token_v0_1 > token.wasm
+stellar contract fetch --id TOKEN_ID > token.wasm
 ```
