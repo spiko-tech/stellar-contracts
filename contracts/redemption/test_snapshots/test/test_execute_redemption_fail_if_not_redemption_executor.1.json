@@ -99,7 +99,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                 },
                 {
-                  "u128": {
+                  "i128": {
                     "hi": 0,
                     "lo": 100
                   }
@@ -231,7 +231,7 @@
                       "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
                     },
                     {
-                      "u128": {
+                      "i128": {
                         "hi": 0,
                         "lo": 100
                       }

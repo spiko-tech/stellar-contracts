@@ -3,7 +3,7 @@
 extern crate std;
 
 use super::contract::{Token, TokenClient};
-use contracts_utils::role::{MINTER_ROLE, WHITELISTED_ROLE};
+use contracts_utils::role::{MINTER_ROLE, REDEMPTION_EXECUTOR_ROLE, WHITELISTED_ROLE};
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
@@ -201,4 +201,82 @@ fn test_mint_should_fail_if_user_is_not_whitelisted() {
     let result = client.try_mint(&user, &amount, &minter);
 
     assert!(result.is_err());
+}
+
+#[test]
+fn test_redeem_should_require_auth_and_redeem_and_emit_a_redeem_event_and_call_redemption_on_redeem(
+) {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let salt: u128 = 1234567890;
+    let user: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let (_, token_address, client) = deploy_token(&e);
+    let (_, redemption_address, redemption_client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    redemption_client.add_token(&token_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    client.mint(&user, &amount, &minter);
+
+    client.redeem(&amount, &salt, &user);
+
+    let auths = e.auths();
+    assert_eq!(auths.len(), 1);
+    let (addr, _invocation) = &auths[0];
+    assert_eq!(addr, &user);
+
+    let events = e.events().clone().all();
+    assert_eq!(Vec::len(&events), 2);
+
+    let transfer_event = Vec::get(&events, 0).expect("Event should be present");
+    assert_eq!(transfer_event.0, token_address);
+    assert_eq!(Vec::len(&transfer_event.1), 3);
+    let first_transfer_event_topic =
+        Vec::get(&transfer_event.1, 0).expect("First event topic should be present");
+    let second_transfer_event_topic =
+        Vec::get(&transfer_event.1, 1).expect("Second event topic should be present");
+    let third_transfer_event_topic =
+        Vec::get(&transfer_event.1, 2).expect("Third event topic should be present");
+    assert_eq!(
+        first_transfer_event_topic.to_xdr(&e),
+        symbol_short!("transfer").to_xdr(&e)
+    );
+    assert_eq!(
+        second_transfer_event_topic.to_xdr(&e),
+        user.clone().to_xdr(&e)
+    );
+    assert_eq!(
+        third_transfer_event_topic.to_xdr(&e),
+        redemption_address.clone().to_xdr(&e)
+    );
+    assert_eq!(transfer_event.2.to_xdr(&e), (amount as i128).to_xdr(&e));
+
+    let redemption_event: (Address, Vec<soroban_sdk::Val>, soroban_sdk::Val) =
+        Vec::get(&events, 1).expect("Event should be present");
+    assert_eq!(redemption_event.0, redemption_address);
+    assert_eq!(Vec::len(&redemption_event.1), 2);
+    let first_redemption_event_topic =
+        Vec::get(&redemption_event.1, 0).expect("First event topic should be present");
+    let second_redemption_event_topic =
+        Vec::get(&redemption_event.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_redemption_event_topic.to_xdr(&e),
+        symbol_short!("REDEEM").to_xdr(&e)
+    );
+    assert_eq!(
+        second_redemption_event_topic.to_xdr(&e),
+        symbol_short!("INIT").to_xdr(&e)
+    );
+    assert_eq!(
+        redemption_event.2.to_xdr(&e),
+        (token_address, user, amount, salt).to_xdr(&e)
+    );
+
+    let balance = client.balance(&redemption_address);
+    assert_eq!(balance, amount);
 }

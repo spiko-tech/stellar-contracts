@@ -24,7 +24,7 @@ pub trait PermissionManagerInterface {
 
 #[contractclient(name = "RedemptionClient")]
 pub trait RedemptionInterface {
-    fn on_redeem(e: &Env, token: Address, from: Address, amount: u128, salt: u128);
+    fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: u128);
 }
 
 #[derive(Upgradeable)]
@@ -73,8 +73,7 @@ impl Token {
     }
 
     #[when_not_paused]
-    pub fn redeem(e: &Env, amount: u128, salt: u128, caller: Address) {
-        caller.require_auth();
+    pub fn redeem(e: &Env, amount: i128, salt: u128, caller: Address) {
         assert!(amount > 0, "Redemption amount should be more than zero");
         Self::assert_has_role(e, &caller, &WHITELISTED_ROLE);
 
@@ -84,7 +83,9 @@ impl Token {
             .get(&REDEMPTION_KEY)
             .expect("Redemption not set");
         let client: RedemptionClient<'_> = RedemptionClient::new(e, &redemption);
-        Self::transfer(e, caller.clone(), redemption, amount as i128);
+        Self::assert_has_role(e, &redemption, &WHITELISTED_ROLE);
+
+        Base::transfer(e, &caller, &redemption, amount);
         client.on_redeem(&e.current_contract_address(), &caller, &amount, &salt);
     }
 }
@@ -96,7 +97,6 @@ impl FungibleToken for Token {
 
     #[when_not_paused]
     fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
-        from.require_auth();
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Base::transfer(e, &from, &to, amount);

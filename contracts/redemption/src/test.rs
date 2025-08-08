@@ -102,7 +102,7 @@ fn test_on_redeem_should_fail_if_token_is_not_set() {
     let non_token_contract: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
 
-    let result = client.try_on_redeem(&non_token_contract, &user, &100u128, &100u128);
+    let result = client.try_on_redeem(&non_token_contract, &user, &100, &100);
 
     assert!(result.is_err());
 }
@@ -115,7 +115,7 @@ fn test_on_redeem_should_pass_if_token_is_set() {
     let user: Address = Address::generate(&e);
     client.add_token(&token);
 
-    let result = client.try_on_redeem(&token, &user, &100u128, &100u128);
+    let result = client.try_on_redeem(&token, &user, &100, &100);
 
     assert!(result.is_ok());
 }
@@ -128,7 +128,7 @@ fn test_on_redeem_should_require_token_auth() {
     let user: Address = Address::generate(&e);
     client.add_token(&token);
 
-    client.on_redeem(&token, &user, &100u128, &100u128);
+    client.on_redeem(&token, &user, &100, &100);
 
     let auths = e.auths();
     assert_eq!(auths.len(), 1);
@@ -145,8 +145,8 @@ fn test_on_redeem_should_fail_if_redemption_already_exists() {
     let salt: u128 = 100;
     client.add_token(&token);
 
-    client.on_redeem(&token, &user, &100u128, &salt);
-    let result = client.try_on_redeem(&token, &user, &20u128, &salt);
+    client.on_redeem(&token, &user, &100, &salt);
+    let result = client.try_on_redeem(&token, &user, &20, &salt);
 
     assert!(result.is_err());
 }
@@ -160,7 +160,7 @@ fn test_on_redeem_should_emit_a_redemption_initiated_event() {
     let salt: u128 = 100;
     client.add_token(&token);
 
-    client.on_redeem(&token, &user, &100u128, &salt);
+    client.on_redeem(&token, &user, &100, &salt);
 
     let events = e.events().all();
     assert_eq!(Vec::len(&events), 1);
@@ -197,8 +197,8 @@ fn test_execute_redemption_should_emit_a_redemption_executed_event() {
     permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
     client.add_token(&token);
 
-    client.on_redeem(&token, &user, &100u128, &salt);
-    client.execute_redemption(&relayer, &token, &user, &100u128, &salt);
+    client.on_redeem(&token, &user, &100, &salt);
+    client.execute_redemption(&relayer, &token, &user, &100, &salt);
 
     let events = e.events().all();
     assert_eq!(Vec::len(&events), 1);
@@ -235,8 +235,8 @@ fn test_execute_redemption_fail_if_not_redemption_executor() {
     permission_manager_client.grant_role(&admin, &relayer, &WHITELISTED_ROLE);
     client.add_token(&token);
 
-    client.on_redeem(&token, &user, &100u128, &salt);
-    let result = client.try_execute_redemption(&relayer, &token, &user, &100u128, &salt);
+    client.on_redeem(&token, &user, &100, &salt);
+    let result = client.try_execute_redemption(&relayer, &token, &user, &100, &salt);
 
     assert!(result.is_err());
 }
@@ -255,8 +255,8 @@ fn test_cancel_redemption_should_emit_a_redemption_cancelled_event() {
     permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
     client.add_token(&token);
 
-    client.on_redeem(&token, &user, &100u128, &salt);
-    client.cancel_redemption(&relayer, &token, &user, &100u128, &salt);
+    client.on_redeem(&token, &user, &100, &salt);
+    client.cancel_redemption(&relayer, &token, &user, &100, &salt);
 
     let events = e.events().all();
     assert_eq!(Vec::len(&events), 1);
@@ -293,8 +293,8 @@ fn test_cancel_redemption_fail_if_not_redemption_executor() {
     permission_manager_client.grant_role(&admin, &relayer, &WHITELISTED_ROLE);
     client.add_token(&token);
 
-    client.on_redeem(&token, &user, &100u128, &salt);
-    let result = client.try_cancel_redemption(&relayer, &token, &user, &100u128, &salt);
+    client.on_redeem(&token, &user, &100, &salt);
+    let result = client.try_cancel_redemption(&relayer, &token, &user, &100, &salt);
 
     assert!(result.is_err());
 }

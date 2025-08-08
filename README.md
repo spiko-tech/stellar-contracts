@@ -22,7 +22,7 @@ To deploy a contract (put as many parameters as you need instead of admin)
 stellar contract deploy \
   --source nicolas \
   --network testnet \
-  --alias redemption_v0_0 \
+  --alias redemption_v0_1 \
   --wasm target/wasm32v1-none/release/redemption.wasm \
   -- \
   --owner GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H
@@ -31,7 +31,7 @@ stellar contract deploy \
 To invoke a contract function
 ```
 stellar contract invoke \
-  --id redemption_v0_0 \
+  --id redemption_v0_1 \
   --source alice \
   --network testnet \
   -- \
@@ -40,7 +40,7 @@ stellar contract invoke \
 
 To get the compiled wasm code for integration test
 ```
-stellar contract fetch --id redemption_v0_0 > redemption.wasm
+stellar contract fetch --id redemption_v0_1 > redemption.wasm
 ```
 
 ### Testnet deployment
@@ -61,4 +61,5 @@ My freighter address: `GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H`
 **Release**
 
 - Testnet
+    - redemption_v0_1: `CBLVJKK34MHHXIHNYPMSDE3O3L24D6PTQXBVKQDTRAKHJLJBBP2CH26B`
     - redemption_v0_0: `CBLVJKK34MHHXIHNYPMSDE3O3L24D6PTQXBVKQDTRAKHJLJBBP2CH26B`
