@@ -378,3 +378,123 @@ fn test_redeem_should_fail_if_not_enough_balance() {
 
     assert!(result.is_err());
 }
+
+#[test]
+fn test_transfer_should_transfer_tokens_and_emit_a_transfer_event() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let (_, token_address, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    client.mint(&user1, &amount, &minter);
+
+    client.transfer(&user1, &user2, &amount);
+
+    let auths = e.auths();
+    assert_eq!(auths.len(), 1);
+    let (addr, _invocation) = &auths[0];
+    assert_eq!(addr, &user1);
+
+    let events = e.events().clone().all();
+    assert_eq!(Vec::len(&events), 1);
+
+    let transfer_event = Vec::get(&events, 0).expect("Event should be present");
+    assert_eq!(transfer_event.0, token_address);
+    assert_eq!(Vec::len(&transfer_event.1), 3);
+    let first_transfer_event_topic =
+        Vec::get(&transfer_event.1, 0).expect("First event topic should be present");
+    let second_transfer_event_topic =
+        Vec::get(&transfer_event.1, 1).expect("Second event topic should be present");
+    let third_transfer_event_topic =
+        Vec::get(&transfer_event.1, 2).expect("Third event topic should be present");
+    assert_eq!(
+        first_transfer_event_topic.to_xdr(&e),
+        symbol_short!("transfer").to_xdr(&e)
+    );
+    assert_eq!(
+        second_transfer_event_topic.to_xdr(&e),
+        user1.clone().to_xdr(&e)
+    );
+    assert_eq!(
+        third_transfer_event_topic.to_xdr(&e),
+        user2.clone().to_xdr(&e)
+    );
+    assert_eq!(transfer_event.2.to_xdr(&e), (amount as i128).to_xdr(&e));
+
+    let balance1 = client.balance(&user1);
+    assert_eq!(balance1, 0);
+    let balance2 = client.balance(&user2);
+    assert_eq!(balance2, amount);
+}
+
+#[test]
+fn test_transfer_should_fail_if_user1_is_not_whitelisted() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    client.mint(&user1, &amount, &minter);
+    permission_manager_client.revoke_role(&admin, &user1, &WHITELISTED_ROLE);
+
+    let result = client.try_transfer(&user1, &user2, &amount);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_transfer_should_fail_if_user2_is_not_whitelisted() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    client.mint(&user1, &amount, &minter);
+    permission_manager_client.revoke_role(&admin, &user2, &WHITELISTED_ROLE);
+
+    let result = client.try_transfer(&user1, &user2, &amount);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_transfer_should_fail_if_not_enough_balance() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    client.mint(&user1, &(amount / 2), &minter);
+
+    let result = client.try_transfer(&user1, &user2, &amount);
+
+    assert!(result.is_err());
+}
