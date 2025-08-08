@@ -3,7 +3,7 @@
 extern crate std;
 
 use super::contract::{Token, TokenClient};
-use contracts_utils::role::{MINTER_ROLE, WHITELISTED_ROLE};
+use contracts_utils::role::{BURNER_ROLE, MINTER_ROLE, WHITELISTED_ROLE};
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
@@ -73,6 +73,8 @@ fn test_should_set_owner_on_constructor() {
     assert_eq!(fetched_owner, Some(owner));
 }
 
+//// set_permission_manager
+
 #[test]
 fn test_set_permission_manager_should_require_owner_auth() {
     let e = setup_env();
@@ -87,6 +89,8 @@ fn test_set_permission_manager_should_require_owner_auth() {
     assert_eq!(addr, &owner);
 }
 
+//// set_redemption
+
 #[test]
 fn test_set_redemption_should_require_owner_auth() {
     let e = setup_env();
@@ -100,6 +104,8 @@ fn test_set_redemption_should_require_owner_auth() {
     let (addr, _invocation) = &auths[0];
     assert_eq!(addr, &owner);
 }
+
+//// mint
 
 #[test]
 fn test_mint_should_emit_a_mint_event() {
@@ -202,6 +208,8 @@ fn test_mint_should_fail_if_user_is_not_whitelisted() {
 
     assert!(result.is_err());
 }
+
+//// redeem
 
 #[test]
 fn test_redeem_should_require_auth_and_redeem_and_emit_a_redeem_event_and_call_redemption_on_redeem(
@@ -379,6 +387,8 @@ fn test_redeem_should_fail_if_not_enough_balance() {
     assert!(result.is_err());
 }
 
+//// transfer
+
 #[test]
 fn test_transfer_should_transfer_tokens_and_emit_a_transfer_event() {
     let e = setup_env();
@@ -495,6 +505,99 @@ fn test_transfer_should_fail_if_not_enough_balance() {
     client.mint(&user1, &(amount / 2), &minter);
 
     let result = client.try_transfer(&user1, &user2, &amount);
+
+    assert!(result.is_err());
+}
+
+//// burn
+
+#[test]
+fn test_burn_should_require_auth_and_burn_and_emit_a_burn_event() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let minter: Address = Address::generate(&e);
+    let (_, token_address, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &BURNER_ROLE);
+    client.mint(&redemption_address, &amount, &minter);
+
+    client.burn(&redemption_address, &amount);
+
+    let auths = e.auths();
+    assert_eq!(auths.len(), 1);
+    let (addr, _invocation) = &auths[0];
+    assert_eq!(addr, &redemption_address);
+
+    let events = e.events().clone().all();
+    assert_eq!(Vec::len(&events), 1);
+
+    let transfer_event = Vec::get(&events, 0).expect("Event should be present");
+    assert_eq!(transfer_event.0, token_address);
+    assert_eq!(Vec::len(&transfer_event.1), 2);
+    let first_transfer_event_topic =
+        Vec::get(&transfer_event.1, 0).expect("First event topic should be present");
+    let second_transfer_event_topic =
+        Vec::get(&transfer_event.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_transfer_event_topic.to_xdr(&e),
+        symbol_short!("burn").to_xdr(&e)
+    );
+    assert_eq!(
+        second_transfer_event_topic.to_xdr(&e),
+        redemption_address.clone().to_xdr(&e)
+    );
+    assert_eq!(transfer_event.2.to_xdr(&e), (amount as i128).to_xdr(&e));
+
+    let balance = client.balance(&redemption_address);
+    assert_eq!(balance, 0);
+}
+
+#[test]
+fn test_burn_should_fail_if_not_burner() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let minter: Address = Address::generate(&e);
+    let (_, _, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    client.mint(&redemption_address, &amount, &minter);
+
+    let result = client.try_burn(&redemption_address, &amount);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_burn_should_fail_trying_on_another_account_than_redemption() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let minter: Address = Address::generate(&e);
+    let another_account: Address = Address::generate(&e);
+    let (_, _, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &BURNER_ROLE);
+    permission_manager_client.grant_role(&admin, &another_account, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &another_account, &BURNER_ROLE);
+    client.mint(&redemption_address, &amount, &minter);
+
+    let result = client.try_burn(&another_account, &amount);
 
     assert!(result.is_err());
 }

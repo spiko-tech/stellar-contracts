@@ -101,13 +101,6 @@ impl FungibleToken for Token {
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Base::transfer(e, &from, &to, amount);
     }
-
-    #[when_not_paused]
-    fn transfer_from(e: &Env, spender: Address, from: Address, to: Address, amount: i128) {
-        Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
-        Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
-        Base::transfer_from(e, &spender, &from, &to, amount);
-    }
 }
 
 #[default_impl]
@@ -115,7 +108,6 @@ impl FungibleToken for Token {
 impl FungibleBurnable for Token {
     #[when_not_paused]
     fn burn(e: &Env, account: Address, amount: i128) {
-        account.require_auth();
         Self::assert_has_role(e, &account, &BURNER_ROLE);
 
         let redemption: Address = e
