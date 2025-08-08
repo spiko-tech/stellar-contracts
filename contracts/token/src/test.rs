@@ -132,7 +132,7 @@ fn test_mint_should_emit_a_mint_event() {
 }
 
 #[test]
-fn test_mint_should_mint_and_emit_a_mint_event() {
+fn test_mint_should_require_auth_and_mint_and_emit_a_mint_event() {
     let e = setup_env();
     let minter: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
@@ -145,6 +145,11 @@ fn test_mint_should_mint_and_emit_a_mint_event() {
     permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
 
     client.mint(&user, &amount, &minter);
+
+    let auths = e.auths();
+    assert_eq!(auths.len(), 1);
+    let (addr, _invocation) = &auths[0];
+    assert_eq!(addr, &minter);
 
     let events = e.events().clone().all();
     assert_eq!(Vec::len(&events), 1);
