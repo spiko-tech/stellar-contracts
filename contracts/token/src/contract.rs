@@ -163,7 +163,3 @@ impl Pausable for Token {
 #[default_impl]
 #[contractimpl]
 impl Ownable for Token {}
-
-/*
-    fn redeem(ref self: TContractState, amount: u256, salt: felt252);
-*/
