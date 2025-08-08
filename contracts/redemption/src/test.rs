@@ -17,6 +17,12 @@ mod permission_manager {
     contractimport!(file = "../../wasm/permission_manager.wasm");
 }
 
+mod token {
+    use soroban_sdk::contractimport;
+
+    contractimport!(file = "../../wasm/token.wasm");
+}
+
 fn setup_env() -> Env {
     let e: Env = Env::default();
     e.mock_all_auths();
