@@ -22,16 +22,19 @@ To deploy a contract (put as many parameters as you need instead of admin)
 stellar contract deploy \
   --source nicolas \
   --network testnet \
-  --alias redemption_v0_1 \
-  --wasm target/wasm32v1-none/release/redemption.wasm \
+  --alias token_v0_0 \
+  --wasm target/wasm32v1-none/release/token.wasm \
   -- \
-  --owner GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H
+  --owner GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H \
+  --name "Spiko EUR Test" \
+  --symbol EUTBL \
+  --decimals 6
 ```
 
 To invoke a contract function
 ```
 stellar contract invoke \
-  --id redemption_v0_1 \
+  --id token_v0_0 \
   --source alice \
   --network testnet \
   -- \
@@ -40,7 +43,7 @@ stellar contract invoke \
 
 To get the compiled wasm code for integration test
 ```
-stellar contract fetch --id redemption_v0_1 > redemption.wasm
+stellar contract fetch --id token_v0_0 > token.wasm
 ```
 
 ### Testnet deployment
@@ -63,3 +66,10 @@ My freighter address: `GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H`
 - Testnet
     - redemption_v0_1: `CBLVJKK34MHHXIHNYPMSDE3O3L24D6PTQXBVKQDTRAKHJLJBBP2CH26B`
     - redemption_v0_0: `CBLVJKK34MHHXIHNYPMSDE3O3L24D6PTQXBVKQDTRAKHJLJBBP2CH26B`
+
+#### Token
+
+**Release**
+
+- Testnet
+    - token_v0_0: `CCLQBG4PPTHSCZDI3QUGGSSPUHRH7O42GG64A36H7MAKG6Z6CU3W5MSD`
