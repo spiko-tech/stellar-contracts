@@ -28,7 +28,7 @@ pub const REDEMPTION_CANCELLED_EVENT: Symbol = symbol_short!("CANCEL");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RedemptionEntry(pub Address, pub Address, pub u128, pub u128);
+pub struct RedemptionEntry(pub Address, pub Address, pub i128, pub u128);
 
 #[contractimpl]
 impl Redemption {
@@ -73,7 +73,7 @@ impl Redemption {
             .set(&PERMISSION_MANAGER_KEY, &permission_manager);
     }
 
-    pub fn on_redeem(e: &Env, token: Address, from: Address, amount: u128, salt: u128) {
+    pub fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: u128) {
         token.require_auth();
         Self::assert_token_registered(e, &token);
 
@@ -93,7 +93,7 @@ impl Redemption {
         caller: Address,
         token: Address,
         _from: Address,
-        _amount: u128,
+        _amount: i128,
         salt: u128,
     ) {
         caller.require_auth();
@@ -118,7 +118,7 @@ impl Redemption {
         caller: Address,
         token: Address,
         _from: Address,
-        _amount: u128,
+        _amount: i128,
         salt: u128,
     ) {
         caller.require_auth();
