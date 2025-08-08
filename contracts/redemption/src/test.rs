@@ -18,14 +18,23 @@ mod permission_manager {
 }
 
 mod token {
-    use soroban_sdk::contractimport;
+    use soroban_sdk::{contract, contractimpl, Address};
 
-    contractimport!(file = "../../wasm/token.wasm");
+    use crate::contract::TokenInterface;
+
+    #[contract]
+    pub struct Mock;
+    #[contractimpl]
+    impl TokenInterface for Mock {
+        fn burn(_account: Address, _amount: i128) {}
+        fn transfer(_from: Address, _to: Address, _amount: i128) {}
+    }
 }
 
 fn setup_env() -> Env {
     let e: Env = Env::default();
     e.mock_all_auths();
+
     e
 }
 
@@ -47,6 +56,10 @@ fn deploy_permission_manager(e: &Env) -> (Address, Address, permission_manager::
     permission_manager_client.initialize();
 
     (admin, permission_manager_address, permission_manager_client)
+}
+
+fn deploy_token(e: &Env, token_address: &Address) {
+    e.register_at(&token_address, token::Mock, ());
 }
 
 #[test]
@@ -78,6 +91,7 @@ fn test_add_token_should_require_owner_auth() {
     let e = setup_env();
     let (owner, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
+    deploy_token(&e, &token);
 
     client.add_token(&token);
 
@@ -119,6 +133,7 @@ fn test_on_redeem_should_pass_if_token_is_set() {
     let (_, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
+    deploy_token(&e, &token);
     client.add_token(&token);
 
     let result = client.try_on_redeem(&token, &user, &100, &100);
@@ -132,6 +147,7 @@ fn test_on_redeem_should_require_token_auth() {
     let (_, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
+    deploy_token(&e, &token);
     client.add_token(&token);
 
     client.on_redeem(&token, &user, &100, &100);
@@ -149,6 +165,7 @@ fn test_on_redeem_should_fail_if_redemption_already_exists() {
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     let salt: u128 = 100;
+    deploy_token(&e, &token);
     client.add_token(&token);
 
     client.on_redeem(&token, &user, &100, &salt);
@@ -164,6 +181,7 @@ fn test_on_redeem_should_emit_a_redemption_initiated_event() {
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     let salt: u128 = 100;
+    deploy_token(&e, &token);
     client.add_token(&token);
 
     client.on_redeem(&token, &user, &100, &salt);
@@ -201,6 +219,7 @@ fn test_execute_redemption_should_emit_a_redemption_executed_event() {
     let user: Address = Address::generate(&e);
     let salt: u128 = 100;
     permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
+    deploy_token(&e, &token);
     client.add_token(&token);
 
     client.on_redeem(&token, &user, &100, &salt);
@@ -239,6 +258,7 @@ fn test_execute_redemption_fail_if_not_redemption_executor() {
     let user: Address = Address::generate(&e);
     let salt: u128 = 100;
     permission_manager_client.grant_role(&admin, &relayer, &WHITELISTED_ROLE);
+    deploy_token(&e, &token);
     client.add_token(&token);
 
     client.on_redeem(&token, &user, &100, &salt);
@@ -259,6 +279,7 @@ fn test_cancel_redemption_should_emit_a_redemption_cancelled_event() {
     let user: Address = Address::generate(&e);
     let salt: u128 = 100;
     permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
+    deploy_token(&e, &token);
     client.add_token(&token);
 
     client.on_redeem(&token, &user, &100, &salt);
@@ -297,6 +318,7 @@ fn test_cancel_redemption_fail_if_not_redemption_executor() {
     let user: Address = Address::generate(&e);
     let salt: u128 = 100;
     permission_manager_client.grant_role(&admin, &relayer, &WHITELISTED_ROLE);
+    deploy_token(&e, &token);
     client.add_token(&token);
 
     client.on_redeem(&token, &user, &100, &salt);

@@ -17,7 +17,8 @@ pub trait PermissionManagerInterface {
 
 #[contractclient(name = "TokenClient")]
 pub trait TokenInterface {
-    fn burn(e: &Env, account: Address, amount: i128);
+    fn burn(account: Address, amount: i128);
+    fn transfer(from: Address, to: Address, amount: i128);
 }
 
 #[derive(Upgradeable)]
@@ -124,20 +125,22 @@ impl Redemption {
         e: &Env,
         caller: Address,
         token: Address,
-        _from: Address,
-        _amount: i128,
+        from: Address,
+        amount: i128,
         salt: u128,
     ) {
         caller.require_auth();
         Self::assert_has_role(e, &caller, &REDEMPTION_EXECUTOR_ROLE);
         Self::assert_token_registered(e, &token);
 
+        let client: TokenClient<'_> = TokenClient::new(e, &token);
+
         let redemption_entry: RedemptionEntry = e
             .storage()
             .persistent()
             .get(&salt)
             .expect("Redemption does not exist");
-        // TODO: add transfer from token contract
+        client.transfer(&e.current_contract_address(), &from, &amount);
         e.storage().persistent().remove(&salt);
         e.events().publish(
             (REDEMPTION_EVENT, REDEMPTION_CANCELLED_EVENT),
