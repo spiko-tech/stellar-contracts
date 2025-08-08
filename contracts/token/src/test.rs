@@ -3,7 +3,7 @@
 extern crate std;
 
 use super::contract::{Token, TokenClient};
-use contracts_utils::role::{MINTER_ROLE, REDEMPTION_EXECUTOR_ROLE, WHITELISTED_ROLE};
+use contracts_utils::role::{MINTER_ROLE, WHITELISTED_ROLE};
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
@@ -279,4 +279,102 @@ fn test_redeem_should_require_auth_and_redeem_and_emit_a_redeem_event_and_call_r
 
     let balance = client.balance(&redemption_address);
     assert_eq!(balance, amount);
+}
+
+#[test]
+fn test_redeem_should_fail_if_amount_is_not_positive() {
+    let e = setup_env();
+    let amount: i128 = 0;
+    let salt: u128 = 1234567890;
+    let user: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let (_, token_address, client) = deploy_token(&e);
+    let (_, redemption_address, redemption_client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    redemption_client.add_token(&token_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    client.mint(&user, &amount, &minter);
+
+    let result = client.try_redeem(&amount, &salt, &user);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_redeem_should_fail_if_user_is_not_whitelisted() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let salt: u128 = 1234567890;
+    let user: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let (_, token_address, client) = deploy_token(&e);
+    let (_, redemption_address, redemption_client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    redemption_client.add_token(&token_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    client.mint(&user, &amount, &minter);
+    permission_manager_client.revoke_role(&admin, &user, &WHITELISTED_ROLE);
+
+    let result = client.try_redeem(&amount, &salt, &user);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_redeem_should_fail_if_redemption_contract_is_not_whitelisted() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let salt: u128 = 1234567890;
+    let user: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let (_, token_address, client) = deploy_token(&e);
+    let (_, redemption_address, redemption_client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    redemption_client.add_token(&token_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    client.mint(&user, &amount, &minter);
+    permission_manager_client.revoke_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+
+    let result = client.try_redeem(&amount, &salt, &user);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_redeem_should_fail_if_not_enough_balance() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let salt: u128 = 1234567890;
+    let user: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let (_, token_address, client) = deploy_token(&e);
+    let (_, redemption_address, redemption_client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    redemption_client.add_token(&token_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    client.mint(&user, &(amount / 2), &minter);
+
+    let result = client.try_redeem(&amount, &salt, &user);
+
+    assert!(result.is_err());
 }
