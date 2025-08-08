@@ -1,3 +1,6 @@
+# Stellar
+.stellar
+
 # Rust build artifacts
 target/
 Cargo.lock
