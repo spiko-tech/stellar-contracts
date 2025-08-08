@@ -49,7 +49,7 @@ impl Token {
             .expect("Permission manager not set");
         let client: PermissionManagerClient<'_> =
             PermissionManagerClient::new(e, &permission_manager);
-        assert!(client.has_role(account, role).is_some(), "Invalid role");
+        assert!(client.has_role(account, &role).is_some(), "Invalid role");
     }
 
     #[only_owner]
@@ -68,6 +68,7 @@ impl Token {
     pub fn mint(e: &Env, account: Address, amount: i128, caller: Address) {
         caller.require_auth();
         Self::assert_has_role(e, &caller, &MINTER_ROLE);
+        Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
         Base::mint(e, &account, amount);
     }
 

@@ -3,7 +3,13 @@
 extern crate std;
 
 use super::contract::{Token, TokenClient};
-use soroban_sdk::{testutils::Address as _, Address, Env, String};
+use contracts_utils::role::{MINTER_ROLE, WHITELISTED_ROLE};
+use soroban_sdk::{
+    symbol_short,
+    testutils::{Address as _, Events},
+    xdr::ToXdr,
+    Address, Env, String, Vec,
+};
 
 mod permission_manager {
     use soroban_sdk::contractimport;
@@ -93,4 +99,101 @@ fn test_set_redemption_should_require_owner_auth() {
     assert_eq!(auths.len(), 1);
     let (addr, _invocation) = &auths[0];
     assert_eq!(addr, &owner);
+}
+
+#[test]
+fn test_mint_should_emit_a_mint_event() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let amount: i128 = 1000000;
+    let (_, token_address, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+
+    client.mint(&user, &amount, &minter);
+
+    let events = e.events().clone().all();
+    assert_eq!(Vec::len(&events), 1);
+    let event = Vec::get(&events, 0).expect("Event should be present");
+    assert_eq!(event.0, token_address);
+    assert_eq!(Vec::len(&event.1), 2);
+    let first_event_topic = Vec::get(&event.1, 0).expect("First event topic should be present");
+    let second_event_topic = Vec::get(&event.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_event_topic.to_xdr(&e),
+        symbol_short!("mint").to_xdr(&e)
+    );
+    assert_eq!(second_event_topic.to_xdr(&e), user.to_xdr(&e));
+    assert_eq!(event.2.to_xdr(&e), amount.to_xdr(&e));
+}
+
+#[test]
+fn test_mint_should_mint_and_emit_a_mint_event() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let amount: i128 = 1000000;
+    let (_, token_address, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+
+    client.mint(&user, &amount, &minter);
+
+    let events = e.events().clone().all();
+    assert_eq!(Vec::len(&events), 1);
+    let event = Vec::get(&events, 0).expect("Event should be present");
+    assert_eq!(event.0, token_address);
+    assert_eq!(Vec::len(&event.1), 2);
+    let first_event_topic = Vec::get(&event.1, 0).expect("First event topic should be present");
+    let second_event_topic = Vec::get(&event.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_event_topic.to_xdr(&e),
+        symbol_short!("mint").to_xdr(&e)
+    );
+    assert_eq!(second_event_topic.to_xdr(&e), user.clone().to_xdr(&e));
+    assert_eq!(event.2.to_xdr(&e), amount.to_xdr(&e));
+
+    let balance = client.balance(&user);
+    assert_eq!(balance, amount);
+}
+
+#[test]
+fn test_mint_should_fail_if_minter_is_not_minter() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let amount: i128 = 1000000;
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+
+    let result = client.try_mint(&user, &amount, &minter);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_mint_should_fail_if_user_is_not_whitelisted() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let amount: i128 = 1000000;
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+
+    let result = client.try_mint(&user, &amount, &minter);
+
+    assert!(result.is_err());
 }
