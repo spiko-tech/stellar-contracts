@@ -108,10 +108,7 @@
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
             "key": {
-              "u128": {
-                "hi": 0,
-                "lo": 100
-              }
+              "bytes": "fa68f7a424c49d3251892461b9d0a425160e26ae1c795bd9a698caa6260829d1"
             },
             "durability": "persistent"
           }
@@ -124,31 +121,13 @@
                 "ext": "v0",
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
                 "key": {
-                  "u128": {
-                    "hi": 0,
-                    "lo": 100
-                  }
+                  "bytes": "fa68f7a424c49d3251892461b9d0a425160e26ae1c795bd9a698caa6260829d1"
                 },
                 "durability": "persistent",
                 "val": {
                   "vec": [
                     {
-                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
-                    },
-                    {
-                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
-                    },
-                    {
-                      "i128": {
-                        "hi": 0,
-                        "lo": 100
-                      }
-                    },
-                    {
-                      "u128": {
-                        "hi": 0,
-                        "lo": 100
-                      }
+                      "symbol": "Pending"
                     }
                   ]
                 }
