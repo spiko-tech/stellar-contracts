@@ -169,7 +169,7 @@ fn test_on_redeem_should_fail_if_redemption_already_exists() {
     client.add_token(&token);
 
     client.on_redeem(&token, &user, &100, &salt);
-    let result = client.try_on_redeem(&token, &user, &20, &salt);
+    let result = client.try_on_redeem(&token, &user, &100, &salt);
 
     assert!(result.is_err());
 }
