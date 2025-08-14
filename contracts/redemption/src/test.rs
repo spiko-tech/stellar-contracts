@@ -247,6 +247,26 @@ fn test_execute_redemption_should_emit_a_redemption_executed_event() {
 }
 
 #[test]
+fn test_execute_redemption_fail_if_redemption_not_initiated() {
+    let e = setup_env();
+    let (_, _, client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    let token: Address = Address::generate(&e);
+    let relayer: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let salt: u128 = 100;
+    permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
+    deploy_token(&e, &token);
+    client.add_token(&token);
+
+    let result = client.try_execute_redemption(&relayer, &token, &user, &100, &salt);
+
+    assert!(result.is_err());
+}
+
+#[test]
 fn test_execute_redemption_fail_if_not_redemption_executor() {
     let e = setup_env();
     let (_, _, client) = deploy_redemption(&e);
@@ -304,6 +324,26 @@ fn test_cancel_redemption_should_emit_a_redemption_cancelled_event() {
         event.2.to_xdr(&e),
         RedemptionEntry(token, user, 100, salt).to_xdr(&e)
     );
+}
+
+#[test]
+fn test_cancel_redemption_fail_if_redemption_not_initiated() {
+    let e = setup_env();
+    let (_, _, client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    let token: Address = Address::generate(&e);
+    let relayer: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let salt: u128 = 100;
+    permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
+    deploy_token(&e, &token);
+    client.add_token(&token);
+
+    let result = client.try_cancel_redemption(&relayer, &token, &user, &100, &salt);
+
+    assert!(result.is_err());
 }
 
 #[test]
