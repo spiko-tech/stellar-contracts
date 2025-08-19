@@ -6,7 +6,8 @@
 //! For security issues, please contact: tech@spiko.tech
 
 use soroban_sdk::{
-    contract, contractclient, contractimpl, symbol_short, Address, Env, String, Symbol,
+    contract, contractclient, contractimpl, contracttype, symbol_short, Address, Env, String,
+    Symbol, Vec,
 };
 use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::pausable::{self as pausable, Pausable};
@@ -33,6 +34,10 @@ pub struct Token;
 
 pub const PERMISSION_MANAGER_KEY: Symbol = symbol_short!("PERM");
 pub const REDEMPTION_KEY: Symbol = symbol_short!("REDEMP");
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MintBatchOperation(pub Address, pub i128);
 
 #[contractimpl]
 impl Token {
@@ -70,6 +75,23 @@ impl Token {
         Self::assert_has_role(e, &caller, &MINTER_ROLE);
         Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
         Base::mint(e, &account, amount);
+    }
+
+    #[when_not_paused]
+    pub fn mint_batch(e: &Env, operations: Vec<MintBatchOperation>, caller: Address) {
+        caller.require_auth();
+        Self::assert_has_role(e, &caller, &MINTER_ROLE);
+
+        for operation in &operations {
+            let account = operation.0;
+            Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
+        }
+
+        for operation in &operations {
+            let account = operation.0;
+            let amount = operation.1;
+            Base::mint(e, &account, amount);
+        }
     }
 
     #[when_not_paused]
