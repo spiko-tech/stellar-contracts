@@ -2,6 +2,8 @@
 
 extern crate std;
 
+use crate::contract::MintBatchOperation;
+
 use super::contract::{Token, TokenClient};
 use contracts_utils::role::{BURNER_ROLE, MINTER_ROLE, WHITELISTED_ROLE};
 use soroban_sdk::{
@@ -205,6 +207,112 @@ fn test_mint_should_fail_if_user_is_not_whitelisted() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
 
     let result = client.try_mint(&user, &amount, &minter);
+
+    assert!(result.is_err());
+}
+
+//// mint_batch
+
+#[test]
+fn test_mint_batch_should_require_auth_and_mint_and_emit_mint_events() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let amount1: i128 = 1000000;
+    let amount2: i128 = 2000000;
+    let (_, token_address, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    let mut operations = Vec::new(&e);
+    operations.push_front(MintBatchOperation(user1.clone(), amount1));
+    operations.push_front(MintBatchOperation(user2.clone(), amount2));
+
+    client.mint_batch(&operations, &minter);
+
+    let auths = e.auths();
+    assert_eq!(auths.len(), 1);
+    let (addr, _invocation) = &auths[0];
+    assert_eq!(addr, &minter);
+
+    let events = e.events().clone().all();
+    assert_eq!(Vec::len(&events), 2);
+    let event1 = Vec::get(&events, 0).expect("Event should be present");
+    assert_eq!(event1.0, token_address);
+    assert_eq!(Vec::len(&event1.1), 2);
+    let first_event1_topic = Vec::get(&event1.1, 0).expect("First event topic should be present");
+    let second_event1_topic = Vec::get(&event1.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_event1_topic.to_xdr(&e),
+        symbol_short!("mint").to_xdr(&e)
+    );
+    assert_eq!(second_event1_topic.to_xdr(&e), user2.clone().to_xdr(&e));
+    assert_eq!(event1.2.to_xdr(&e), amount2.to_xdr(&e));
+
+    let event2 = Vec::get(&events, 1).expect("Event should be present");
+    assert_eq!(event2.0, token_address);
+    assert_eq!(Vec::len(&event2.1), 2);
+    let first_event2_topic = Vec::get(&event2.1, 0).expect("First event topic should be present");
+    let second_event2_topic = Vec::get(&event2.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_event2_topic.to_xdr(&e),
+        symbol_short!("mint").to_xdr(&e)
+    );
+    assert_eq!(second_event2_topic.to_xdr(&e), user1.clone().to_xdr(&e));
+    assert_eq!(event2.2.to_xdr(&e), amount1.to_xdr(&e));
+
+    let balance1 = client.balance(&user1);
+    assert_eq!(balance1, amount1);
+    let balance2 = client.balance(&user2);
+    assert_eq!(balance2, amount2);
+}
+
+#[test]
+fn test_mint_batch_should_fail_if_minter_is_not_minter() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let amount1: i128 = 1000000;
+    let amount2: i128 = 2000000;
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    let mut operations = Vec::new(&e);
+    operations.push_front(MintBatchOperation(user1.clone(), amount1));
+    operations.push_front(MintBatchOperation(user2.clone(), amount2));
+
+    let result = client.try_mint_batch(&operations, &minter);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_mint_batch_should_fail_if_one_of_the_users_is_not_whitelisted() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let amount1: i128 = 1000000;
+    let amount2: i128 = 2000000;
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    let mut operations = Vec::new(&e);
+    operations.push_front(MintBatchOperation(user1.clone(), amount1));
+    operations.push_front(MintBatchOperation(user2.clone(), amount2));
+
+    let result = client.try_mint_batch(&operations, &minter);
 
     assert!(result.is_err());
 }
