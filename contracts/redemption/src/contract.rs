@@ -3,7 +3,7 @@
 
 use soroban_sdk::{
     contract, contractclient, contractimpl, contracttype, symbol_short, xdr::ToXdr, Address, Bytes,
-    Env, Symbol,
+    Env, Symbol, Vec,
 };
 use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::upgradeable::{Upgradeable, UpgradeableInternal};
@@ -45,6 +45,10 @@ pub enum RedemptionStatus {
     Executed,
     Canceled,
 }
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExecuteRedemptionOperation(pub Address, pub Address, pub i128, pub u128);
 
 #[contractimpl]
 impl Redemption {
@@ -156,6 +160,65 @@ impl Redemption {
             (REDEMPTION_EVENT, REDEMPTION_EXECUTED_EVENT),
             RedemptionEntry(token, from, amount, salt),
         );
+    }
+
+    pub fn execute_redemption_batch(
+        e: &Env,
+        caller: Address,
+        operations: Vec<ExecuteRedemptionOperation>,
+    ) {
+        caller.require_auth();
+        Self::assert_has_role(e, &caller, &REDEMPTION_EXECUTOR_ROLE);
+
+        // check all operations are valid
+        for operation in &operations {
+            let token = operation.0;
+            let from = operation.1;
+            let amount = operation.2;
+            let salt = operation.3;
+
+            Self::assert_token_registered(e, &token);
+
+            let mut redemption_entry_serialized: Bytes = token.clone().to_xdr(&e);
+            redemption_entry_serialized.append(&from.clone().to_xdr(&e));
+            redemption_entry_serialized.append(&amount.to_xdr(&e));
+            redemption_entry_serialized.append(&salt.to_xdr(&e));
+            let redemption_entry_hash = e.crypto().sha256(&redemption_entry_serialized);
+
+            let redemption_status: RedemptionStatus = e
+                .storage()
+                .persistent()
+                .get(&redemption_entry_hash)
+                .unwrap_or(RedemptionStatus::Null);
+            assert!(
+                redemption_status == RedemptionStatus::Pending,
+                "Redemption not pending"
+            );
+        }
+
+        for operation in &operations {
+            let token = operation.0;
+            let from = operation.1;
+            let amount = operation.2;
+            let salt = operation.3;
+
+            let client: TokenClient<'_> = TokenClient::new(e, &token);
+
+            let mut redemption_entry_serialized: Bytes = token.clone().to_xdr(&e);
+            redemption_entry_serialized.append(&from.clone().to_xdr(&e));
+            redemption_entry_serialized.append(&amount.to_xdr(&e));
+            redemption_entry_serialized.append(&salt.to_xdr(&e));
+            let redemption_entry_hash = e.crypto().sha256(&redemption_entry_serialized);
+
+            client.burn(&from, &amount);
+            e.storage()
+                .persistent()
+                .set(&redemption_entry_hash, &RedemptionStatus::Executed);
+            e.events().publish(
+                (REDEMPTION_EVENT, REDEMPTION_EXECUTED_EVENT),
+                RedemptionEntry(token, from, amount, salt),
+            );
+        }
     }
 
     pub fn cancel_redemption(
