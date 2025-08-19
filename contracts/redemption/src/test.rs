@@ -2,6 +2,8 @@
 
 extern crate std;
 
+use crate::contract::ExecuteRedemptionOperation;
+
 use super::contract::{Redemption, RedemptionArgs, RedemptionClient, RedemptionEntry};
 use contracts_utils::role::{REDEMPTION_EXECUTOR_ROLE, WHITELISTED_ROLE};
 use soroban_sdk::{
@@ -283,6 +285,158 @@ fn test_execute_redemption_fail_if_not_redemption_executor() {
 
     client.on_redeem(&token, &user, &100, &salt);
     let result = client.try_execute_redemption(&relayer, &token, &user, &100, &salt);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_execute_redemption_batch_should_emit_a_redemption_executed_events() {
+    let e = setup_env();
+    let (_, redemption_address, client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    let token: Address = Address::generate(&e);
+    let relayer: Address = Address::generate(&e);
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let salt1: u128 = 100;
+    let salt2: u128 = 200;
+    let amount1: i128 = 1000000;
+    let amount2: i128 = 2000000;
+    let mut operations = Vec::new(&e);
+    operations.push_front(ExecuteRedemptionOperation(
+        token.clone(),
+        user1.clone(),
+        amount1,
+        salt1,
+    ));
+    operations.push_front(ExecuteRedemptionOperation(
+        token.clone(),
+        user2.clone(),
+        amount2,
+        salt2,
+    ));
+    permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
+    deploy_token(&e, &token);
+    client.add_token(&token);
+
+    client.on_redeem(&token, &user1, &amount1, &salt1);
+    client.on_redeem(&token, &user2, &amount2, &salt2);
+    client.execute_redemption_batch(&relayer, &operations);
+
+    let events = e.events().all();
+    assert_eq!(Vec::len(&events), 2);
+
+    let event1 = Vec::get(&events, 0).expect("Event should be present");
+    assert_eq!(event1.0, redemption_address);
+    assert_eq!(Vec::len(&event1.1), 2);
+    let first_event1_topic = Vec::get(&event1.1, 0).expect("First event topic should be present");
+    let second_event1_topic = Vec::get(&event1.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_event1_topic.to_xdr(&e),
+        symbol_short!("REDEEM").to_xdr(&e)
+    );
+    assert_eq!(
+        second_event1_topic.to_xdr(&e),
+        symbol_short!("EXEC").to_xdr(&e)
+    );
+    assert_eq!(
+        event1.2.to_xdr(&e),
+        RedemptionEntry(token.clone(), user2, amount2, salt2).to_xdr(&e)
+    );
+
+    let event2 = Vec::get(&events, 1).expect("Event should be present");
+    assert_eq!(event2.0, redemption_address);
+    assert_eq!(Vec::len(&event2.1), 2);
+    let first_event2_topic = Vec::get(&event2.1, 0).expect("First event topic should be present");
+    let second_event2_topic = Vec::get(&event2.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_event2_topic.to_xdr(&e),
+        symbol_short!("REDEEM").to_xdr(&e)
+    );
+    assert_eq!(
+        second_event2_topic.to_xdr(&e),
+        symbol_short!("EXEC").to_xdr(&e)
+    );
+    assert_eq!(
+        event2.2.to_xdr(&e),
+        RedemptionEntry(token, user1, amount1, salt1).to_xdr(&e)
+    );
+}
+
+#[test]
+fn test_execute_redemption_batch_fail_if_redemption_not_initiated() {
+    let e = setup_env();
+    let (_, _, client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    let token: Address = Address::generate(&e);
+    let relayer: Address = Address::generate(&e);
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let salt1: u128 = 100;
+    let salt2: u128 = 200;
+    let amount1: i128 = 1000000;
+    let amount2: i128 = 2000000;
+    let mut operations = Vec::new(&e);
+    operations.push_front(ExecuteRedemptionOperation(
+        token.clone(),
+        user1.clone(),
+        amount1,
+        salt1,
+    ));
+    operations.push_front(ExecuteRedemptionOperation(
+        token.clone(),
+        user2.clone(),
+        amount2,
+        salt2,
+    ));
+    permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
+    deploy_token(&e, &token);
+    client.add_token(&token);
+
+    client.on_redeem(&token, &user1, &amount1, &salt1);
+    let result = client.try_execute_redemption_batch(&relayer, &operations);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_execute_redemption_batch_fail_if_not_redemption_executor() {
+    let e = setup_env();
+    let (_, _, client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    let token: Address = Address::generate(&e);
+    let relayer: Address = Address::generate(&e);
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let salt1: u128 = 100;
+    let salt2: u128 = 200;
+    let amount1: i128 = 1000000;
+    let amount2: i128 = 2000000;
+    let mut operations = Vec::new(&e);
+    operations.push_front(ExecuteRedemptionOperation(
+        token.clone(),
+        user1.clone(),
+        amount1,
+        salt1,
+    ));
+    operations.push_front(ExecuteRedemptionOperation(
+        token.clone(),
+        user2.clone(),
+        amount2,
+        salt2,
+    ));
+    deploy_token(&e, &token);
+    client.add_token(&token);
+
+    client.on_redeem(&token, &user1, &amount1, &salt1);
+    client.on_redeem(&token, &user2, &amount2, &salt2);
+    let result = client.try_execute_redemption_batch(&relayer, &operations);
 
     assert!(result.is_err());
 }
