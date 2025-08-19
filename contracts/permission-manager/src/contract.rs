@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Compatible with OpenZeppelin Stellar Soroban Contracts ^0.4.1
 
-use soroban_sdk::{contract, contractimpl, Address, Env, Symbol};
+use soroban_sdk::{contract, contractimpl, Address, Env, Symbol, Vec};
 use stellar_access::access_control::{self as access_control, AccessControl};
 use stellar_contract_utils::upgradeable::UpgradeableInternal;
 use stellar_macros::{default_impl, Upgradeable};
@@ -20,6 +20,16 @@ impl PermissionManager {
 
     pub fn initialize(e: &Env) {
         access_control::set_role_admin(e, &WHITELISTED_ROLE, &WHITELISTER_ROLE);
+    }
+
+    pub fn grant_role_batch(e: &Env, caller: Address, users: Vec<Address>, role: Symbol) {
+        for (index, user) in users.iter().enumerate() {
+            if index == 0 {
+                access_control::grant_role(e, &caller, &user, &role);
+            } else {
+                access_control::grant_role_no_auth(e, &caller, &user, &role);
+            }
+        }
     }
 }
 

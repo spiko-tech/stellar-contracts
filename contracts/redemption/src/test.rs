@@ -407,8 +407,7 @@ fn test_execute_redemption_batch_fail_if_redemption_not_initiated() {
 fn test_execute_redemption_batch_fail_if_not_redemption_executor() {
     let e = setup_env();
     let (_, _, client) = deploy_redemption(&e);
-    let (admin, permission_manager_address, permission_manager_client) =
-        deploy_permission_manager(&e);
+    let (_, permission_manager_address, _) = deploy_permission_manager(&e);
     client.set_permission_manager(&permission_manager_address);
     let token: Address = Address::generate(&e);
     let relayer: Address = Address::generate(&e);
