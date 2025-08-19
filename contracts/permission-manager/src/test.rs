@@ -3,7 +3,7 @@
 extern crate std;
 
 use super::contract::{PermissionManager, PermissionManagerArgs, PermissionManagerClient};
-use soroban_sdk::{contract, testutils::Address as _, Address, Env};
+use soroban_sdk::{contract, testutils::Address as _, Address, Env, Vec};
 
 use contracts_utils::role::{MINTER_ROLE, WHITELISTED_ROLE, WHITELISTER_ROLE};
 
@@ -101,6 +101,48 @@ fn test_grant_role_non_whitelister_role_should_not_be_able_to_grant_whitelisted_
 
     client.grant_role(&admin, &user, &MINTER_ROLE);
     let result = client.try_grant_role(&user, &non_whitelisted, &WHITELISTED_ROLE);
+
+    let is_failure = match result {
+        Ok(Ok(_)) => false,
+        Ok(Err(_)) => true,
+        Err(_) => true,
+    };
+    assert!(is_failure, "Expected function to fail, but it succeeded");
+}
+
+#[test]
+fn test_grant_role_batch_whitelister_role_should_be_able_to_grant_whitelisted_roles() {
+    let e = setup_env();
+    let (admin, client) = deploy_permission_manager(&e);
+    let whitelister: Address = Address::generate(&e);
+    let whitelisted1: Address = Address::generate(&e);
+    let whitelisted2: Address = Address::generate(&e);
+    let mut whitelisted = Vec::new(&e);
+    whitelisted.push_back(whitelisted1.clone());
+    whitelisted.push_back(whitelisted2.clone());
+
+    client.grant_role(&admin, &whitelister, &WHITELISTER_ROLE);
+    client.grant_role_batch(&whitelister, &whitelisted, &WHITELISTED_ROLE);
+
+    let has_role_whitelisted1: Option<u32> = client.has_role(&whitelisted1, &WHITELISTED_ROLE);
+    let has_role_whitelisted2: Option<u32> = client.has_role(&whitelisted2, &WHITELISTED_ROLE);
+    assert_eq!(has_role_whitelisted1, Some(0));
+    assert_eq!(has_role_whitelisted2, Some(1));
+}
+
+#[test]
+fn test_grant_role_batch_non_whitelister_role_should_not_be_able_to_grant_whitelisted_role_case_1()
+{
+    let e = setup_env();
+    let (_admin, client) = deploy_permission_manager(&e);
+    let non_whitelister: Address = Address::generate(&e);
+    let whitelisted1: Address = Address::generate(&e);
+    let whitelisted2: Address = Address::generate(&e);
+    let mut whitelisted = Vec::new(&e);
+    whitelisted.push_back(whitelisted1.clone());
+    whitelisted.push_back(whitelisted2.clone());
+
+    let result = client.try_grant_role_batch(&non_whitelister, &whitelisted, &WHITELISTED_ROLE);
 
     let is_failure = match result {
         Ok(Ok(_)) => false,
