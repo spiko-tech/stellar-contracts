@@ -31,6 +31,16 @@ impl PermissionManager {
             }
         }
     }
+
+    pub fn revoke_role_batch(e: &Env, caller: Address, users: Vec<Address>, role: Symbol) {
+        for (index, user) in users.iter().enumerate() {
+            if index == 0 {
+                access_control::revoke_role(e, &caller, &user, &role);
+            } else {
+                access_control::revoke_role_no_auth(e, &caller, &user, &role);
+            }
+        }
+    }
 }
 
 #[default_impl]
