@@ -50,6 +50,21 @@ fn test_consume_nonce_should_increment_nonce_if_nonce_is_correct() {
 }
 
 #[test]
+fn test_consume_nonce_should_require_auth() {
+    let e = setup_env();
+    let (_, client) = deploy_nonce_manager(&e);
+    let user: Address = Address::generate(&e);
+    let nonce = client.get_nonce(&user);
+
+    client.consume_nonce(&user, &nonce);
+
+    let auths = e.auths();
+    assert_eq!(auths.len(), 1);
+    let (addr, _invocation) = &auths[0];
+    assert_eq!(addr, &user);
+}
+
+#[test]
 fn test_consume_nonce_should_fail_if_nonce_is_incorrect() {
     let e = setup_env();
     let (_, client) = deploy_nonce_manager(&e);

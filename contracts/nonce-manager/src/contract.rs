@@ -18,6 +18,8 @@ impl NonceManager {
     }
 
     pub fn consume_nonce(e: &Env, user: Address, nonce: u128) {
+        user.require_auth();
+
         let current_nonce = e.storage().instance().get(&user).unwrap_or(0u128);
         assert!(current_nonce == nonce);
 
