@@ -2,7 +2,7 @@
 
 extern crate std;
 
-use crate::contract::MintBatchOperation;
+use crate::contract::{BurnBatchOperation, MintBatchOperation};
 
 use super::contract::{Token, TokenClient};
 use contracts_utils::role::{BURNER_ROLE, MINTER_ROLE, WHITELISTED_ROLE};
@@ -683,6 +683,95 @@ fn test_burn_should_fail_if_not_burner() {
     client.mint(&redemption_address, &amount, &minter);
 
     let result = client.try_burn(&redemption_address, &amount, &burner);
+
+    assert!(result.is_err());
+}
+
+//// burn_batch
+
+#[test]
+fn test_burn_batch_should_require_auth_and_burn_and_emit_a_burn_events() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let minter: Address = Address::generate(&e);
+    let burner: Address = Address::generate(&e);
+    let (_, token_address, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &burner, &BURNER_ROLE);
+    client.mint(&redemption_address, &amount, &minter);
+    let mut operations = Vec::new(&e);
+    operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
+    operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
+
+    client.burn_batch(&operations, &burner);
+
+    let auths = e.auths();
+    assert_eq!(auths.len(), 1);
+    let (addr, _invocation) = &auths[0];
+    assert_eq!(addr, &burner);
+
+    let events = e.events().clone().all();
+    assert_eq!(Vec::len(&events), 2);
+
+    let event1 = Vec::get(&events, 0).expect("Event should be present");
+    assert_eq!(event1.0, token_address);
+    assert_eq!(Vec::len(&event1.1), 2);
+    let first_event1_topic = Vec::get(&event1.1, 0).expect("First event topic should be present");
+    let second_event1_topic = Vec::get(&event1.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_event1_topic.to_xdr(&e),
+        symbol_short!("burn").to_xdr(&e)
+    );
+    assert_eq!(
+        second_event1_topic.to_xdr(&e),
+        redemption_address.clone().to_xdr(&e)
+    );
+    assert_eq!(event1.2.to_xdr(&e), (amount / 2 as i128).to_xdr(&e));
+
+    let event2 = Vec::get(&events, 0).expect("Event should be present");
+    assert_eq!(event2.0, token_address);
+    assert_eq!(Vec::len(&event2.1), 2);
+    let first_event2_topic = Vec::get(&event2.1, 0).expect("First event topic should be present");
+    let second_event2_topic = Vec::get(&event2.1, 1).expect("Second event topic should be present");
+    assert_eq!(
+        first_event2_topic.to_xdr(&e),
+        symbol_short!("burn").to_xdr(&e)
+    );
+    assert_eq!(
+        second_event2_topic.to_xdr(&e),
+        redemption_address.clone().to_xdr(&e)
+    );
+    assert_eq!(event2.2.to_xdr(&e), (amount / 2 as i128).to_xdr(&e));
+
+    let balance = client.balance(&redemption_address);
+    assert_eq!(balance, 0);
+}
+
+#[test]
+fn test_burn_batch_should_fail_if_not_burner() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let minter: Address = Address::generate(&e);
+    let burner: Address = Address::generate(&e);
+    let (_, _, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    client.mint(&redemption_address, &amount, &minter);
+    let mut operations = Vec::new(&e);
+    operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
+    operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
+
+    let result = client.try_burn_batch(&operations, &burner);
 
     assert!(result.is_err());
 }
