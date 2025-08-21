@@ -1,10 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Compatible with OpenZeppelin Stellar Soroban Contracts ^0.4.1
-
-//! # Security
-//!
-//! For security issues, please contact: tech@spiko.tech
-
 use soroban_sdk::{
     contract, contractclient, contractimpl, contracttype, symbol_short, Address, Env, String,
     Symbol, Vec,

@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Compatible with OpenZeppelin Stellar Soroban Contracts ^0.4.1
-
 use soroban_sdk::{
     contract, contractclient, contractimpl, contracttype, symbol_short, xdr::ToXdr, Address, Bytes,
     Env, Symbol, Vec,
