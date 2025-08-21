@@ -13,7 +13,7 @@ use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::pausable::{self as pausable, Pausable};
 use stellar_contract_utils::upgradeable::UpgradeableInternal;
 use stellar_macros::{default_impl, only_owner, when_not_paused, Upgradeable};
-use stellar_tokens::fungible::{Base, FungibleToken};
+use stellar_tokens::fungible::Base;
 
 use contracts_utils::role::{BURNER_ROLE, MINTER_ROLE, PAUSER_ROLE, WHITELISTED_ROLE};
 
@@ -126,18 +126,32 @@ impl Token {
         Base::transfer(e, &caller, &redemption, amount);
         client.on_redeem(&e.current_contract_address(), &caller, &amount, &salt);
     }
-}
-
-#[default_impl]
-#[contractimpl]
-impl FungibleToken for Token {
-    type ContractType = Base;
 
     #[when_not_paused]
-    fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
+    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Base::transfer(e, &from, &to, amount);
+    }
+
+    pub fn total_supply(e: &Env) -> i128 {
+        Base::total_supply(e)
+    }
+
+    pub fn balance(e: &Env, account: Address) -> i128 {
+        Base::balance(e, &account)
+    }
+
+    pub fn decimals(e: &Env) -> u32 {
+        Base::decimals(e)
+    }
+
+    pub fn name(e: &Env) -> String {
+        Base::name(e)
+    }
+
+    pub fn symbol(e: &Env) -> String {
+        Base::symbol(e)
     }
 }
 
