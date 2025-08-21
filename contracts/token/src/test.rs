@@ -624,23 +624,23 @@ fn test_burn_should_require_auth_and_burn_and_emit_a_burn_event() {
     let e = setup_env();
     let amount: i128 = 1000000;
     let minter: Address = Address::generate(&e);
+    let burner: Address = Address::generate(&e);
     let (_, token_address, client) = deploy_token(&e);
     let (_, redemption_address, _) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
     client.set_permission_manager(&permission_manager_address);
-    client.set_redemption(&redemption_address);
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
-    permission_manager_client.grant_role(&admin, &redemption_address, &BURNER_ROLE);
+    permission_manager_client.grant_role(&admin, &burner, &BURNER_ROLE);
     client.mint(&redemption_address, &amount, &minter);
 
-    client.burn(&redemption_address, &amount);
+    client.burn(&redemption_address, &amount, &burner);
 
     let auths = e.auths();
     assert_eq!(auths.len(), 1);
     let (addr, _invocation) = &auths[0];
-    assert_eq!(addr, &redemption_address);
+    assert_eq!(addr, &burner);
 
     let events = e.events().clone().all();
     assert_eq!(Vec::len(&events), 1);
@@ -671,6 +671,7 @@ fn test_burn_should_fail_if_not_burner() {
     let e = setup_env();
     let amount: i128 = 1000000;
     let minter: Address = Address::generate(&e);
+    let burner: Address = Address::generate(&e);
     let (_, _, client) = deploy_token(&e);
     let (_, redemption_address, _) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -681,31 +682,7 @@ fn test_burn_should_fail_if_not_burner() {
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
     client.mint(&redemption_address, &amount, &minter);
 
-    let result = client.try_burn(&redemption_address, &amount);
-
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_burn_should_fail_trying_on_another_account_than_redemption() {
-    let e = setup_env();
-    let amount: i128 = 1000000;
-    let minter: Address = Address::generate(&e);
-    let another_account: Address = Address::generate(&e);
-    let (_, _, client) = deploy_token(&e);
-    let (_, redemption_address, _) = deploy_redemption(&e);
-    let (admin, permission_manager_address, permission_manager_client) =
-        deploy_permission_manager(&e);
-    client.set_permission_manager(&permission_manager_address);
-    client.set_redemption(&redemption_address);
-    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
-    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
-    permission_manager_client.grant_role(&admin, &redemption_address, &BURNER_ROLE);
-    permission_manager_client.grant_role(&admin, &another_account, &WHITELISTED_ROLE);
-    permission_manager_client.grant_role(&admin, &another_account, &BURNER_ROLE);
-    client.mint(&redemption_address, &amount, &minter);
-
-    let result = client.try_burn(&another_account, &amount);
+    let result = client.try_burn(&redemption_address, &amount, &burner);
 
     assert!(result.is_err());
 }
