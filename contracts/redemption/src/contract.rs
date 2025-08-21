@@ -1,6 +1,6 @@
 use soroban_sdk::{
-    contract, contractclient, contractimpl, contracttype, symbol_short, xdr::ToXdr, Address, Bytes,
-    Env, Symbol, Vec,
+    contract, contractclient, contractimpl, contracttype, crypto::Hash, symbol_short, xdr::ToXdr,
+    Address, Bytes, Env, Symbol, Vec,
 };
 use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::upgradeable::{Upgradeable, UpgradeableInternal};
@@ -90,20 +90,30 @@ impl Redemption {
             .set(&PERMISSION_MANAGER_KEY, &permission_manager);
     }
 
-    pub fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: u128) {
-        token.require_auth();
-        Self::assert_token_registered(e, &token);
-
+    fn compute_redemption_hash(
+        e: &Env,
+        token: &Address,
+        from: &Address,
+        amount: i128,
+        salt: u128,
+    ) -> Hash<32> {
         let mut redemption_entry_serialized: Bytes = token.clone().to_xdr(&e);
         redemption_entry_serialized.append(&from.clone().to_xdr(&e));
         redemption_entry_serialized.append(&amount.to_xdr(&e));
         redemption_entry_serialized.append(&salt.to_xdr(&e));
-        let redemption_entry_hash = e.crypto().sha256(&redemption_entry_serialized);
+        e.crypto().sha256(&redemption_entry_serialized)
+    }
+
+    pub fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: u128) {
+        token.require_auth();
+        Self::assert_token_registered(e, &token);
+
+        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, salt);
 
         let redemption_status: RedemptionStatus = e
             .storage()
             .persistent()
-            .get(&redemption_entry_hash)
+            .get(&redemption_hash)
             .unwrap_or(RedemptionStatus::Null);
         assert!(
             redemption_status == RedemptionStatus::Null,
@@ -112,7 +122,7 @@ impl Redemption {
 
         e.storage()
             .persistent()
-            .set(&redemption_entry_hash, &RedemptionStatus::Pending);
+            .set(&redemption_hash, &RedemptionStatus::Pending);
         e.events().publish(
             (REDEMPTION_EVENT, REDEMPTION_INITIATED_EVENT),
             RedemptionEntry(token, from, amount, salt),
@@ -133,16 +143,12 @@ impl Redemption {
 
         let client: TokenClient<'_> = TokenClient::new(e, &token);
 
-        let mut redemption_entry_serialized: Bytes = token.clone().to_xdr(&e);
-        redemption_entry_serialized.append(&from.clone().to_xdr(&e));
-        redemption_entry_serialized.append(&amount.to_xdr(&e));
-        redemption_entry_serialized.append(&salt.to_xdr(&e));
-        let redemption_entry_hash = e.crypto().sha256(&redemption_entry_serialized);
+        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, salt);
 
         let redemption_status: RedemptionStatus = e
             .storage()
             .persistent()
-            .get(&redemption_entry_hash)
+            .get(&redemption_hash)
             .unwrap_or(RedemptionStatus::Null);
         assert!(
             redemption_status == RedemptionStatus::Pending,
@@ -152,7 +158,7 @@ impl Redemption {
         client.burn(&from, &amount);
         e.storage()
             .persistent()
-            .set(&redemption_entry_hash, &RedemptionStatus::Executed);
+            .set(&redemption_hash, &RedemptionStatus::Executed);
         e.events().publish(
             (REDEMPTION_EVENT, REDEMPTION_EXECUTED_EVENT),
             RedemptionEntry(token, from, amount, salt),
@@ -176,16 +182,12 @@ impl Redemption {
 
             Self::assert_token_registered(e, &token);
 
-            let mut redemption_entry_serialized: Bytes = token.clone().to_xdr(&e);
-            redemption_entry_serialized.append(&from.clone().to_xdr(&e));
-            redemption_entry_serialized.append(&amount.to_xdr(&e));
-            redemption_entry_serialized.append(&salt.to_xdr(&e));
-            let redemption_entry_hash = e.crypto().sha256(&redemption_entry_serialized);
+            let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, salt);
 
             let redemption_status: RedemptionStatus = e
                 .storage()
                 .persistent()
-                .get(&redemption_entry_hash)
+                .get(&redemption_hash)
                 .unwrap_or(RedemptionStatus::Null);
             assert!(
                 redemption_status == RedemptionStatus::Pending,
@@ -201,16 +203,12 @@ impl Redemption {
 
             let client: TokenClient<'_> = TokenClient::new(e, &token);
 
-            let mut redemption_entry_serialized: Bytes = token.clone().to_xdr(&e);
-            redemption_entry_serialized.append(&from.clone().to_xdr(&e));
-            redemption_entry_serialized.append(&amount.to_xdr(&e));
-            redemption_entry_serialized.append(&salt.to_xdr(&e));
-            let redemption_entry_hash = e.crypto().sha256(&redemption_entry_serialized);
+            let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, salt);
 
             client.burn(&from, &amount);
             e.storage()
                 .persistent()
-                .set(&redemption_entry_hash, &RedemptionStatus::Executed);
+                .set(&redemption_hash, &RedemptionStatus::Executed);
             e.events().publish(
                 (REDEMPTION_EVENT, REDEMPTION_EXECUTED_EVENT),
                 RedemptionEntry(token, from, amount, salt),
@@ -232,16 +230,12 @@ impl Redemption {
 
         let client: TokenClient<'_> = TokenClient::new(e, &token);
 
-        let mut redemption_entry_serialized: Bytes = token.clone().to_xdr(&e);
-        redemption_entry_serialized.append(&from.clone().to_xdr(&e));
-        redemption_entry_serialized.append(&amount.to_xdr(&e));
-        redemption_entry_serialized.append(&salt.to_xdr(&e));
-        let redemption_entry_hash = e.crypto().sha256(&redemption_entry_serialized);
+        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, salt);
 
         let redemption_status: RedemptionStatus = e
             .storage()
             .persistent()
-            .get(&redemption_entry_hash)
+            .get(&redemption_hash)
             .unwrap_or(RedemptionStatus::Null);
         assert!(
             redemption_status == RedemptionStatus::Pending,
@@ -251,7 +245,7 @@ impl Redemption {
         client.transfer(&e.current_contract_address(), &from, &amount);
         e.storage()
             .persistent()
-            .set(&redemption_entry_hash, &RedemptionStatus::Canceled);
+            .set(&redemption_hash, &RedemptionStatus::Canceled);
         e.events().publish(
             (REDEMPTION_EVENT, REDEMPTION_CANCELLED_EVENT),
             RedemptionEntry(token, from, amount, salt),
