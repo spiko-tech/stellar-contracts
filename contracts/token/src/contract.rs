@@ -18,7 +18,7 @@ pub trait PermissionManagerInterface {
 
 #[contractclient(name = "RedemptionClient")]
 pub trait RedemptionInterface {
-    fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: String);
+    fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, idempotency_key: String);
 }
 
 #[derive(Upgradeable)]
@@ -66,13 +66,20 @@ impl Token {
         e.storage().persistent().set(&REDEMPTION_KEY, &redemption);
     }
 
-    fn assert_salt_not_used(e: &Env, salt: &String) {
-        let salt_already_used: bool = e.storage().persistent().get(salt).unwrap_or(false);
-        assert!(!salt_already_used, "Salt already used");
+    fn assert_idempotency_key_not_used(e: &Env, idempotency_key: &String) {
+        let idempotency_key_already_used: bool = e
+            .storage()
+            .persistent()
+            .get(idempotency_key)
+            .unwrap_or(false);
+        assert!(
+            !idempotency_key_already_used,
+            "Idempotency key already used"
+        );
     }
 
-    fn consume_salt(e: &Env, salt: &String) {
-        e.storage().persistent().set(salt, &true);
+    fn consume_idempotency_key(e: &Env, idempotency_key: &String) {
+        e.storage().persistent().set(idempotency_key, &true);
     }
 
     fn auth_mint(e: &Env, caller: Address) {
@@ -81,30 +88,35 @@ impl Token {
     }
 
     #[when_not_paused]
-    pub fn mint(e: &Env, account: Address, amount: i128, caller: Address, salt: String) {
+    pub fn mint(e: &Env, account: Address, amount: i128, caller: Address, idempotency_key: String) {
         Self::auth_mint(e, caller);
         Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
-        Self::assert_salt_not_used(e, &salt);
+        Self::assert_idempotency_key_not_used(e, &idempotency_key);
 
         Base::mint(e, &account, amount);
-        Self::consume_salt(e, &salt);
+        Self::consume_idempotency_key(e, &idempotency_key);
     }
 
     #[when_not_paused]
-    pub fn mint_batch(e: &Env, operations: Vec<MintBatchOperation>, caller: Address, salt: String) {
+    pub fn mint_batch(
+        e: &Env,
+        operations: Vec<MintBatchOperation>,
+        caller: Address,
+        idempotency_key: String,
+    ) {
         Self::auth_mint(e, caller);
         for operation in &operations {
             let account = operation.0;
             Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
         }
-        Self::assert_salt_not_used(e, &salt);
+        Self::assert_idempotency_key_not_used(e, &idempotency_key);
 
         for operation in &operations {
             let account = operation.0;
             let amount = operation.1;
             Base::mint(e, &account, amount);
         }
-        Self::consume_salt(e, &salt);
+        Self::consume_idempotency_key(e, &idempotency_key);
     }
 
     fn auth_burn(e: &Env, caller: Address) {
@@ -118,30 +130,35 @@ impl Token {
     }
 
     #[when_not_paused]
-    pub fn burn(e: &Env, account: Address, amount: i128, caller: Address, salt: String) {
+    pub fn burn(e: &Env, account: Address, amount: i128, caller: Address, idempotency_key: String) {
         Self::auth_burn(e, caller);
-        Self::assert_salt_not_used(e, &salt);
+        Self::assert_idempotency_key_not_used(e, &idempotency_key);
         Self::burn_no_auth(e, account, amount);
-        Self::consume_salt(e, &salt);
+        Self::consume_idempotency_key(e, &idempotency_key);
     }
 
     #[when_not_paused]
-    pub fn burn_batch(e: &Env, operations: Vec<BurnBatchOperation>, caller: Address, salt: String) {
+    pub fn burn_batch(
+        e: &Env,
+        operations: Vec<BurnBatchOperation>,
+        caller: Address,
+        idempotency_key: String,
+    ) {
         Self::auth_burn(e, caller);
-        Self::assert_salt_not_used(e, &salt);
+        Self::assert_idempotency_key_not_used(e, &idempotency_key);
         for operation in &operations {
             let account = operation.0;
             let amount = operation.1;
             Self::burn_no_auth(e, account, amount);
         }
-        Self::consume_salt(e, &salt);
+        Self::consume_idempotency_key(e, &idempotency_key);
     }
 
     #[when_not_paused]
-    pub fn redeem(e: &Env, amount: i128, salt: String, caller: Address) {
+    pub fn redeem(e: &Env, amount: i128, caller: Address, idempotency_key: String) {
         assert!(amount > 0, "Redemption amount should be more than zero");
         Self::assert_has_role(e, &caller, &WHITELISTED_ROLE);
-        Self::assert_salt_not_used(e, &salt);
+        Self::assert_idempotency_key_not_used(e, &idempotency_key);
 
         let redemption: Address = e
             .storage()
@@ -152,17 +169,22 @@ impl Token {
         Self::assert_has_role(e, &redemption, &WHITELISTED_ROLE);
 
         Base::transfer(e, &caller, &redemption, amount);
-        client.on_redeem(&e.current_contract_address(), &caller, &amount, &salt);
-        Self::consume_salt(e, &salt);
+        client.on_redeem(
+            &e.current_contract_address(),
+            &caller,
+            &amount,
+            &idempotency_key,
+        );
+        Self::consume_idempotency_key(e, &idempotency_key);
     }
 
     #[when_not_paused]
-    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128, salt: String) {
+    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128, idempotency_key: String) {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
-        Self::assert_salt_not_used(e, &salt);
+        Self::assert_idempotency_key_not_used(e, &idempotency_key);
         Base::transfer(e, &from, &to, amount);
-        Self::consume_salt(e, &salt);
+        Self::consume_idempotency_key(e, &idempotency_key);
     }
 
     pub fn total_supply(e: &Env) -> i128 {
