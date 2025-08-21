@@ -18,7 +18,7 @@ pub trait PermissionManagerInterface {
 
 #[contractclient(name = "RedemptionClient")]
 pub trait RedemptionInterface {
-    fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: u128);
+    fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: String);
 }
 
 #[derive(Upgradeable)]
@@ -113,7 +113,7 @@ impl Token {
     }
 
     #[when_not_paused]
-    pub fn redeem(e: &Env, amount: i128, salt: u128, caller: Address) {
+    pub fn redeem(e: &Env, amount: i128, salt: String, caller: Address) {
         assert!(amount > 0, "Redemption amount should be more than zero");
         Self::assert_has_role(e, &caller, &WHITELISTED_ROLE);
 
