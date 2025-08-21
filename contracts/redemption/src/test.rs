@@ -10,7 +10,7 @@ use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
     xdr::ToXdr,
-    Address, Env, Vec,
+    Address, Env, String, Vec,
 };
 
 mod permission_manager {
@@ -123,8 +123,9 @@ fn test_on_redeem_should_fail_if_token_is_not_set() {
     let (_, _, client) = deploy_redemption(&e);
     let non_token_contract: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
+    let salt: String = String::from_str(&e, "SALT");
 
-    let result = client.try_on_redeem(&non_token_contract, &user, &100, &100);
+    let result = client.try_on_redeem(&non_token_contract, &user, &100, &salt);
 
     assert!(result.is_err());
 }
@@ -135,10 +136,11 @@ fn test_on_redeem_should_pass_if_token_is_set() {
     let (_, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
+    let salt: String = String::from_str(&e, "SALT");
     deploy_token(&e, &token);
     client.add_token(&token);
 
-    let result = client.try_on_redeem(&token, &user, &100, &100);
+    let result = client.try_on_redeem(&token, &user, &100, &salt);
 
     assert!(result.is_ok());
 }
@@ -149,10 +151,11 @@ fn test_on_redeem_should_require_token_auth() {
     let (_, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
+    let salt: String = String::from_str(&e, "SALT");
     deploy_token(&e, &token);
     client.add_token(&token);
 
-    client.on_redeem(&token, &user, &100, &100);
+    client.on_redeem(&token, &user, &100, &salt);
 
     let auths = e.auths();
     assert_eq!(auths.len(), 1);
@@ -166,7 +169,7 @@ fn test_on_redeem_should_fail_if_redemption_already_exists() {
     let (_, _, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
-    let salt: u128 = 100;
+    let salt: String = String::from_str(&e, "SALT");
     deploy_token(&e, &token);
     client.add_token(&token);
 
@@ -182,7 +185,7 @@ fn test_on_redeem_should_emit_a_redemption_initiated_event() {
     let (_, redemption_address, client) = deploy_redemption(&e);
     let token: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
-    let salt: u128 = 100;
+    let salt: String = String::from_str(&e, "SALT");
     deploy_token(&e, &token);
     client.add_token(&token);
 
@@ -219,7 +222,7 @@ fn test_execute_redemption_should_emit_a_redemption_executed_event() {
     let token: Address = Address::generate(&e);
     let relayer: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
-    let salt: u128 = 100;
+    let salt: String = String::from_str(&e, "SALT");
     permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
     deploy_token(&e, &token);
     client.add_token(&token);
@@ -258,7 +261,7 @@ fn test_execute_redemption_fail_if_redemption_not_initiated() {
     let token: Address = Address::generate(&e);
     let relayer: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
-    let salt: u128 = 100;
+    let salt: String = String::from_str(&e, "SALT");
     permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
     deploy_token(&e, &token);
     client.add_token(&token);
@@ -278,7 +281,7 @@ fn test_execute_redemption_fail_if_not_redemption_executor() {
     let token: Address = Address::generate(&e);
     let relayer: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
-    let salt: u128 = 100;
+    let salt: String = String::from_str(&e, "SALT");
     permission_manager_client.grant_role(&admin, &relayer, &WHITELISTED_ROLE);
     deploy_token(&e, &token);
     client.add_token(&token);
@@ -300,8 +303,8 @@ fn test_execute_redemption_batch_should_emit_a_redemption_executed_events() {
     let relayer: Address = Address::generate(&e);
     let user1: Address = Address::generate(&e);
     let user2: Address = Address::generate(&e);
-    let salt1: u128 = 100;
-    let salt2: u128 = 200;
+    let salt1: String = String::from_str(&e, "SALT1");
+    let salt2: String = String::from_str(&e, "SALT2");
     let amount1: i128 = 1000000;
     let amount2: i128 = 2000000;
     let mut operations = Vec::new(&e);
@@ -309,13 +312,13 @@ fn test_execute_redemption_batch_should_emit_a_redemption_executed_events() {
         token.clone(),
         user1.clone(),
         amount1,
-        salt1,
+        salt1.clone(),
     ));
     operations.push_front(ExecuteRedemptionOperation(
         token.clone(),
         user2.clone(),
         amount2,
-        salt2,
+        salt2.clone(),
     ));
     permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
     deploy_token(&e, &token);
@@ -376,8 +379,8 @@ fn test_execute_redemption_batch_fail_if_redemption_not_initiated() {
     let relayer: Address = Address::generate(&e);
     let user1: Address = Address::generate(&e);
     let user2: Address = Address::generate(&e);
-    let salt1: u128 = 100;
-    let salt2: u128 = 200;
+    let salt1: String = String::from_str(&e, "SALT1");
+    let salt2: String = String::from_str(&e, "SALT2");
     let amount1: i128 = 1000000;
     let amount2: i128 = 2000000;
     let mut operations = Vec::new(&e);
@@ -385,13 +388,13 @@ fn test_execute_redemption_batch_fail_if_redemption_not_initiated() {
         token.clone(),
         user1.clone(),
         amount1,
-        salt1,
+        salt1.clone(),
     ));
     operations.push_front(ExecuteRedemptionOperation(
         token.clone(),
         user2.clone(),
         amount2,
-        salt2,
+        salt2.clone(),
     ));
     permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
     deploy_token(&e, &token);
@@ -413,8 +416,8 @@ fn test_execute_redemption_batch_fail_if_not_redemption_executor() {
     let relayer: Address = Address::generate(&e);
     let user1: Address = Address::generate(&e);
     let user2: Address = Address::generate(&e);
-    let salt1: u128 = 100;
-    let salt2: u128 = 200;
+    let salt1: String = String::from_str(&e, "SALT1");
+    let salt2: String = String::from_str(&e, "SALT2");
     let amount1: i128 = 1000000;
     let amount2: i128 = 2000000;
     let mut operations = Vec::new(&e);
@@ -422,13 +425,13 @@ fn test_execute_redemption_batch_fail_if_not_redemption_executor() {
         token.clone(),
         user1.clone(),
         amount1,
-        salt1,
+        salt1.clone(),
     ));
     operations.push_front(ExecuteRedemptionOperation(
         token.clone(),
         user2.clone(),
         amount2,
-        salt2,
+        salt2.clone(),
     ));
     deploy_token(&e, &token);
     client.add_token(&token);
@@ -450,7 +453,7 @@ fn test_cancel_redemption_should_emit_a_redemption_cancelled_event() {
     let token: Address = Address::generate(&e);
     let relayer: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
-    let salt: u128 = 100;
+    let salt: String = String::from_str(&e, "SALT");
     permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
     deploy_token(&e, &token);
     client.add_token(&token);
@@ -489,7 +492,7 @@ fn test_cancel_redemption_fail_if_redemption_not_initiated() {
     let token: Address = Address::generate(&e);
     let relayer: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
-    let salt: u128 = 100;
+    let salt: String = String::from_str(&e, "SALT");
     permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
     deploy_token(&e, &token);
     client.add_token(&token);
@@ -509,7 +512,7 @@ fn test_cancel_redemption_fail_if_not_redemption_executor() {
     let token: Address = Address::generate(&e);
     let relayer: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
-    let salt: u128 = 100;
+    let salt: String = String::from_str(&e, "SALT");
     permission_manager_client.grant_role(&admin, &relayer, &WHITELISTED_ROLE);
     deploy_token(&e, &token);
     client.add_token(&token);

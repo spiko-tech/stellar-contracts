@@ -1,6 +1,6 @@
 use soroban_sdk::{
     contract, contractclient, contractimpl, contracttype, crypto::Hash, symbol_short, xdr::ToXdr,
-    Address, Bytes, Env, Symbol, Vec,
+    Address, Bytes, Env, String, Symbol, Vec,
 };
 use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::upgradeable::{Upgradeable, UpgradeableInternal};
@@ -32,7 +32,7 @@ pub const REDEMPTION_CANCELLED_EVENT: Symbol = symbol_short!("CANCEL");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RedemptionEntry(pub Address, pub Address, pub i128, pub u128);
+pub struct RedemptionEntry(pub Address, pub Address, pub i128, pub String);
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -45,7 +45,7 @@ pub enum RedemptionStatus {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ExecuteRedemptionOperation(pub Address, pub Address, pub i128, pub u128);
+pub struct ExecuteRedemptionOperation(pub Address, pub Address, pub i128, pub String);
 
 #[contractimpl]
 impl Redemption {
@@ -95,20 +95,20 @@ impl Redemption {
         token: &Address,
         from: &Address,
         amount: i128,
-        salt: u128,
+        salt: &String,
     ) -> Hash<32> {
         let mut redemption_entry_serialized: Bytes = token.clone().to_xdr(&e);
         redemption_entry_serialized.append(&from.clone().to_xdr(&e));
         redemption_entry_serialized.append(&amount.to_xdr(&e));
-        redemption_entry_serialized.append(&salt.to_xdr(&e));
+        redemption_entry_serialized.append(&salt.clone().to_xdr(&e));
         e.crypto().sha256(&redemption_entry_serialized)
     }
 
-    pub fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: u128) {
+    pub fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: String) {
         token.require_auth();
         Self::assert_token_registered(e, &token);
 
-        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, salt);
+        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
 
         let redemption_status: RedemptionStatus = e
             .storage()
@@ -135,7 +135,7 @@ impl Redemption {
         token: Address,
         from: Address,
         amount: i128,
-        salt: u128,
+        salt: String,
     ) {
         caller.require_auth();
         Self::assert_has_role(e, &caller, &REDEMPTION_EXECUTOR_ROLE);
@@ -143,7 +143,7 @@ impl Redemption {
 
         let client: TokenClient<'_> = TokenClient::new(e, &token);
 
-        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, salt);
+        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
 
         let redemption_status: RedemptionStatus = e
             .storage()
@@ -182,7 +182,7 @@ impl Redemption {
 
             Self::assert_token_registered(e, &token);
 
-            let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, salt);
+            let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
 
             let redemption_status: RedemptionStatus = e
                 .storage()
@@ -203,7 +203,7 @@ impl Redemption {
 
             let client: TokenClient<'_> = TokenClient::new(e, &token);
 
-            let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, salt);
+            let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
 
             client.burn(&from, &amount);
             e.storage()
@@ -222,7 +222,7 @@ impl Redemption {
         token: Address,
         from: Address,
         amount: i128,
-        salt: u128,
+        salt: String,
     ) {
         caller.require_auth();
         Self::assert_has_role(e, &caller, &REDEMPTION_EXECUTOR_ROLE);
@@ -230,7 +230,7 @@ impl Redemption {
 
         let client: TokenClient<'_> = TokenClient::new(e, &token);
 
-        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, salt);
+        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
 
         let redemption_status: RedemptionStatus = e
             .storage()
