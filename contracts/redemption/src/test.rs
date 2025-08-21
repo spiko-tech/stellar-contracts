@@ -213,87 +213,7 @@ fn test_on_redeem_should_emit_a_redemption_initiated_event() {
 }
 
 #[test]
-fn test_execute_redemption_should_emit_a_redemption_executed_event() {
-    let e = setup_env();
-    let (_, redemption_address, client) = deploy_redemption(&e);
-    let (admin, permission_manager_address, permission_manager_client) =
-        deploy_permission_manager(&e);
-    client.set_permission_manager(&permission_manager_address);
-    let token: Address = Address::generate(&e);
-    let relayer: Address = Address::generate(&e);
-    let user: Address = Address::generate(&e);
-    let salt: String = String::from_str(&e, "SALT");
-    permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
-    deploy_token(&e, &token);
-    client.add_token(&token);
-
-    client.on_redeem(&token, &user, &100, &salt);
-    client.execute_redemption(&relayer, &token, &user, &100, &salt);
-
-    let events = e.events().all();
-    assert_eq!(Vec::len(&events), 1);
-    let event = Vec::get(&events, 0).expect("Event should be present");
-    assert_eq!(event.0, redemption_address);
-    assert_eq!(Vec::len(&event.1), 2);
-    let first_event_topic = Vec::get(&event.1, 0).expect("First event topic should be present");
-    let second_event_topic = Vec::get(&event.1, 1).expect("Second event topic should be present");
-    assert_eq!(
-        first_event_topic.to_xdr(&e),
-        symbol_short!("REDEEM").to_xdr(&e)
-    );
-    assert_eq!(
-        second_event_topic.to_xdr(&e),
-        symbol_short!("EXEC").to_xdr(&e)
-    );
-    assert_eq!(
-        event.2.to_xdr(&e),
-        RedemptionEntry(token, user, 100, salt).to_xdr(&e)
-    );
-}
-
-#[test]
-fn test_execute_redemption_fail_if_redemption_not_initiated() {
-    let e = setup_env();
-    let (_, _, client) = deploy_redemption(&e);
-    let (admin, permission_manager_address, permission_manager_client) =
-        deploy_permission_manager(&e);
-    client.set_permission_manager(&permission_manager_address);
-    let token: Address = Address::generate(&e);
-    let relayer: Address = Address::generate(&e);
-    let user: Address = Address::generate(&e);
-    let salt: String = String::from_str(&e, "SALT");
-    permission_manager_client.grant_role(&admin, &relayer, &REDEMPTION_EXECUTOR_ROLE);
-    deploy_token(&e, &token);
-    client.add_token(&token);
-
-    let result = client.try_execute_redemption(&relayer, &token, &user, &100, &salt);
-
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_execute_redemption_fail_if_not_redemption_executor() {
-    let e = setup_env();
-    let (_, _, client) = deploy_redemption(&e);
-    let (admin, permission_manager_address, permission_manager_client) =
-        deploy_permission_manager(&e);
-    client.set_permission_manager(&permission_manager_address);
-    let token: Address = Address::generate(&e);
-    let relayer: Address = Address::generate(&e);
-    let user: Address = Address::generate(&e);
-    let salt: String = String::from_str(&e, "SALT");
-    permission_manager_client.grant_role(&admin, &relayer, &WHITELISTED_ROLE);
-    deploy_token(&e, &token);
-    client.add_token(&token);
-
-    client.on_redeem(&token, &user, &100, &salt);
-    let result = client.try_execute_redemption(&relayer, &token, &user, &100, &salt);
-
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_execute_redemption_batch_should_emit_a_redemption_executed_events() {
+fn test_execute_redemptions_should_emit_a_redemption_executed_events() {
     let e = setup_env();
     let (_, redemption_address, client) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -326,7 +246,7 @@ fn test_execute_redemption_batch_should_emit_a_redemption_executed_events() {
 
     client.on_redeem(&token, &user1, &amount1, &salt1);
     client.on_redeem(&token, &user2, &amount2, &salt2);
-    client.execute_redemption_batch(&relayer, &operations);
+    client.execute_redemptions(&relayer, &operations);
 
     let events = e.events().all();
     assert_eq!(Vec::len(&events), 2);
@@ -369,7 +289,7 @@ fn test_execute_redemption_batch_should_emit_a_redemption_executed_events() {
 }
 
 #[test]
-fn test_execute_redemption_batch_fail_if_redemption_not_initiated() {
+fn test_execute_redemptions_fail_if_redemption_not_initiated() {
     let e = setup_env();
     let (_, _, client) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -401,13 +321,13 @@ fn test_execute_redemption_batch_fail_if_redemption_not_initiated() {
     client.add_token(&token);
 
     client.on_redeem(&token, &user1, &amount1, &salt1);
-    let result = client.try_execute_redemption_batch(&relayer, &operations);
+    let result = client.try_execute_redemptions(&relayer, &operations);
 
     assert!(result.is_err());
 }
 
 #[test]
-fn test_execute_redemption_batch_fail_if_not_redemption_executor() {
+fn test_execute_redemptions_fail_if_not_redemption_executor() {
     let e = setup_env();
     let (_, _, client) = deploy_redemption(&e);
     let (_, permission_manager_address, _) = deploy_permission_manager(&e);
@@ -438,7 +358,7 @@ fn test_execute_redemption_batch_fail_if_not_redemption_executor() {
 
     client.on_redeem(&token, &user1, &amount1, &salt1);
     client.on_redeem(&token, &user2, &amount2, &salt2);
-    let result = client.try_execute_redemption_batch(&relayer, &operations);
+    let result = client.try_execute_redemptions(&relayer, &operations);
 
     assert!(result.is_err());
 }

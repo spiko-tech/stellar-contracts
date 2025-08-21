@@ -18,7 +18,7 @@ pub trait PermissionManagerInterface {
 
 #[contractclient(name = "RedemptionClient")]
 pub trait RedemptionInterface {
-    fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, idempotency_key: String);
+    fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: String);
 }
 
 #[derive(Upgradeable)]
