@@ -115,6 +115,7 @@ fn test_mint_should_emit_a_mint_event() {
     let minter: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     let amount: i128 = 1000000;
+    let salt: String = String::from_str(&e, "SALT");
     let (_, token_address, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
@@ -122,7 +123,7 @@ fn test_mint_should_emit_a_mint_event() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
 
-    client.mint(&user, &amount, &minter);
+    client.mint(&user, &amount, &minter, &salt);
 
     let events = e.events().clone().all();
     assert_eq!(Vec::len(&events), 1);
@@ -145,6 +146,7 @@ fn test_mint_should_require_auth_and_mint_and_emit_a_mint_event() {
     let minter: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     let amount: i128 = 1000000;
+    let salt: String = String::from_str(&e, "SALT");
     let (_, token_address, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
@@ -152,7 +154,7 @@ fn test_mint_should_require_auth_and_mint_and_emit_a_mint_event() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
 
-    client.mint(&user, &amount, &minter);
+    client.mint(&user, &amount, &minter, &salt);
 
     let auths = e.auths();
     assert_eq!(auths.len(), 1);
@@ -183,13 +185,14 @@ fn test_mint_should_fail_if_minter_is_not_minter() {
     let minter: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     let amount: i128 = 1000000;
+    let salt: String = String::from_str(&e, "SALT");
     let (_, _, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
     client.set_permission_manager(&permission_manager_address);
     permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
 
-    let result = client.try_mint(&user, &amount, &minter);
+    let result = client.try_mint(&user, &amount, &minter, &salt);
 
     assert!(result.is_err());
 }
@@ -200,13 +203,34 @@ fn test_mint_should_fail_if_user_is_not_whitelisted() {
     let minter: Address = Address::generate(&e);
     let user: Address = Address::generate(&e);
     let amount: i128 = 1000000;
+    let salt: String = String::from_str(&e, "SALT");
     let (_, _, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
     client.set_permission_manager(&permission_manager_address);
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
 
-    let result = client.try_mint(&user, &amount, &minter);
+    let result = client.try_mint(&user, &amount, &minter, &salt);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_mint_should_fail_if_salt_is_already_used() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let amount: i128 = 1000000;
+    let salt: String = String::from_str(&e, "SALT");
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+
+    client.mint(&user, &amount, &minter, &salt);
+    let result = client.try_mint(&user, &amount, &minter, &salt);
 
     assert!(result.is_err());
 }
@@ -221,6 +245,7 @@ fn test_mint_batch_should_require_auth_and_mint_and_emit_mint_events() {
     let user2: Address = Address::generate(&e);
     let amount1: i128 = 1000000;
     let amount2: i128 = 2000000;
+    let salt: String = String::from_str(&e, "SALT");
     let (_, token_address, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
@@ -232,7 +257,7 @@ fn test_mint_batch_should_require_auth_and_mint_and_emit_mint_events() {
     operations.push_front(MintBatchOperation(user1.clone(), amount1));
     operations.push_front(MintBatchOperation(user2.clone(), amount2));
 
-    client.mint_batch(&operations, &minter);
+    client.mint_batch(&operations, &minter, &salt);
 
     let auths = e.auths();
     assert_eq!(auths.len(), 1);
@@ -279,6 +304,7 @@ fn test_mint_batch_should_fail_if_minter_is_not_minter() {
     let user2: Address = Address::generate(&e);
     let amount1: i128 = 1000000;
     let amount2: i128 = 2000000;
+    let salt: String = String::from_str(&e, "SALT");
     let (_, _, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
@@ -289,7 +315,7 @@ fn test_mint_batch_should_fail_if_minter_is_not_minter() {
     operations.push_front(MintBatchOperation(user1.clone(), amount1));
     operations.push_front(MintBatchOperation(user2.clone(), amount2));
 
-    let result = client.try_mint_batch(&operations, &minter);
+    let result = client.try_mint_batch(&operations, &minter, &salt);
 
     assert!(result.is_err());
 }
@@ -302,6 +328,7 @@ fn test_mint_batch_should_fail_if_one_of_the_users_is_not_whitelisted() {
     let user2: Address = Address::generate(&e);
     let amount1: i128 = 1000000;
     let amount2: i128 = 2000000;
+    let salt: String = String::from_str(&e, "SALT");
     let (_, _, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
@@ -312,7 +339,33 @@ fn test_mint_batch_should_fail_if_one_of_the_users_is_not_whitelisted() {
     operations.push_front(MintBatchOperation(user1.clone(), amount1));
     operations.push_front(MintBatchOperation(user2.clone(), amount2));
 
-    let result = client.try_mint_batch(&operations, &minter);
+    let result = client.try_mint_batch(&operations, &minter, &salt);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_mint_batch_should_fail_if_salt_is_already_used() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let amount1: i128 = 1000000;
+    let amount2: i128 = 2000000;
+    let salt: String = String::from_str(&e, "SALT");
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    let mut operations = Vec::new(&e);
+    operations.push_front(MintBatchOperation(user1.clone(), amount1));
+    operations.push_front(MintBatchOperation(user2.clone(), amount2));
+
+    client.mint_batch(&operations, &minter, &salt);
+    let result = client.try_mint_batch(&operations, &minter, &salt);
 
     assert!(result.is_err());
 }
@@ -327,6 +380,7 @@ fn test_redeem_should_require_auth_and_redeem_and_emit_a_redeem_event_and_call_r
     let salt: String = String::from_str(&e, "SALT");
     let user: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT2");
     let (_, token_address, client) = deploy_token(&e);
     let (_, redemption_address, redemption_client) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -337,7 +391,7 @@ fn test_redeem_should_require_auth_and_redeem_and_emit_a_redeem_event_and_call_r
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
-    client.mint(&user, &amount, &minter);
+    client.mint(&user, &amount, &minter, &mint_salt);
 
     client.redeem(&amount, &salt, &user);
 
@@ -404,6 +458,7 @@ fn test_redeem_should_fail_if_amount_is_not_positive() {
     let salt: String = String::from_str(&e, "SALT");
     let user: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT2");
     let (_, token_address, client) = deploy_token(&e);
     let (_, redemption_address, redemption_client) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -414,7 +469,7 @@ fn test_redeem_should_fail_if_amount_is_not_positive() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
-    client.mint(&user, &amount, &minter);
+    client.mint(&user, &amount, &minter, &mint_salt);
 
     let result = client.try_redeem(&amount, &salt, &user);
 
@@ -428,6 +483,7 @@ fn test_redeem_should_fail_if_user_is_not_whitelisted() {
     let salt: String = String::from_str(&e, "SALT");
     let user: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT2");
     let (_, token_address, client) = deploy_token(&e);
     let (_, redemption_address, redemption_client) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -438,7 +494,7 @@ fn test_redeem_should_fail_if_user_is_not_whitelisted() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
-    client.mint(&user, &amount, &minter);
+    client.mint(&user, &amount, &minter, &mint_salt);
     permission_manager_client.revoke_role(&admin, &user, &WHITELISTED_ROLE);
 
     let result = client.try_redeem(&amount, &salt, &user);
@@ -453,6 +509,7 @@ fn test_redeem_should_fail_if_redemption_contract_is_not_whitelisted() {
     let salt: String = String::from_str(&e, "SALT");
     let user: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT2");
     let (_, token_address, client) = deploy_token(&e);
     let (_, redemption_address, redemption_client) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -463,7 +520,7 @@ fn test_redeem_should_fail_if_redemption_contract_is_not_whitelisted() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
-    client.mint(&user, &amount, &minter);
+    client.mint(&user, &amount, &minter, &mint_salt);
     permission_manager_client.revoke_role(&admin, &redemption_address, &WHITELISTED_ROLE);
 
     let result = client.try_redeem(&amount, &salt, &user);
@@ -478,6 +535,7 @@ fn test_redeem_should_fail_if_not_enough_balance() {
     let salt: String = String::from_str(&e, "SALT");
     let user: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT2");
     let (_, token_address, client) = deploy_token(&e);
     let (_, redemption_address, redemption_client) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -488,8 +546,34 @@ fn test_redeem_should_fail_if_not_enough_balance() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
-    client.mint(&user, &(amount / 2), &minter);
+    client.mint(&user, &(amount / 2), &minter, &mint_salt);
 
+    let result = client.try_redeem(&amount, &salt, &user);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_redeem_should_fail_if_salt_is_already_used() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let salt: String = String::from_str(&e, "SALT");
+    let user: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT2");
+    let (_, token_address, client) = deploy_token(&e);
+    let (_, redemption_address, redemption_client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    redemption_client.add_token(&token_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    client.mint(&user, &(amount * 3), &minter, &mint_salt);
+
+    client.redeem(&amount, &salt, &user);
     let result = client.try_redeem(&amount, &salt, &user);
 
     assert!(result.is_err());
@@ -504,6 +588,8 @@ fn test_transfer_should_transfer_tokens_and_emit_a_transfer_event() {
     let user1: Address = Address::generate(&e);
     let user2: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let transfer_salt: String = String::from_str(&e, "SALT2");
     let (_, token_address, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
@@ -511,9 +597,9 @@ fn test_transfer_should_transfer_tokens_and_emit_a_transfer_event() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
-    client.mint(&user1, &amount, &minter);
+    client.mint(&user1, &amount, &minter, &mint_salt);
 
-    client.transfer(&user1, &user2, &amount);
+    client.transfer(&user1, &user2, &amount, &transfer_salt);
 
     let auths = e.auths();
     assert_eq!(auths.len(), 1);
@@ -559,6 +645,8 @@ fn test_transfer_should_fail_if_user1_is_not_whitelisted() {
     let user1: Address = Address::generate(&e);
     let user2: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let transfer_salt: String = String::from_str(&e, "SALT2");
     let (_, _, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
@@ -566,10 +654,10 @@ fn test_transfer_should_fail_if_user1_is_not_whitelisted() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
-    client.mint(&user1, &amount, &minter);
+    client.mint(&user1, &amount, &minter, &mint_salt);
     permission_manager_client.revoke_role(&admin, &user1, &WHITELISTED_ROLE);
 
-    let result = client.try_transfer(&user1, &user2, &amount);
+    let result = client.try_transfer(&user1, &user2, &amount, &transfer_salt);
 
     assert!(result.is_err());
 }
@@ -581,6 +669,8 @@ fn test_transfer_should_fail_if_user2_is_not_whitelisted() {
     let user1: Address = Address::generate(&e);
     let user2: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let transfer_salt: String = String::from_str(&e, "SALT2");
     let (_, _, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
@@ -588,10 +678,10 @@ fn test_transfer_should_fail_if_user2_is_not_whitelisted() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
-    client.mint(&user1, &amount, &minter);
+    client.mint(&user1, &amount, &minter, &mint_salt);
     permission_manager_client.revoke_role(&admin, &user2, &WHITELISTED_ROLE);
 
-    let result = client.try_transfer(&user1, &user2, &amount);
+    let result = client.try_transfer(&user1, &user2, &amount, &transfer_salt);
 
     assert!(result.is_err());
 }
@@ -603,6 +693,8 @@ fn test_transfer_should_fail_if_not_enough_balance() {
     let user1: Address = Address::generate(&e);
     let user2: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let transfer_salt: String = String::from_str(&e, "SALT2");
     let (_, _, client) = deploy_token(&e);
     let (admin, permission_manager_address, permission_manager_client) =
         deploy_permission_manager(&e);
@@ -610,9 +702,33 @@ fn test_transfer_should_fail_if_not_enough_balance() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
-    client.mint(&user1, &(amount / 2), &minter);
+    client.mint(&user1, &(amount / 2), &minter, &mint_salt);
 
-    let result = client.try_transfer(&user1, &user2, &amount);
+    let result = client.try_transfer(&user1, &user2, &amount, &transfer_salt);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_transfer_should_fail_if_salt_is_already_used() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let transfer_salt: String = String::from_str(&e, "SALT2");
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    client.mint(&user1, &(amount * 3), &minter, &mint_salt);
+
+    client.transfer(&user1, &user2, &amount, &transfer_salt);
+    let result = client.try_transfer(&user1, &user2, &amount, &transfer_salt);
 
     assert!(result.is_err());
 }
@@ -625,6 +741,8 @@ fn test_burn_should_require_auth_and_burn_and_emit_a_burn_event() {
     let amount: i128 = 1000000;
     let minter: Address = Address::generate(&e);
     let burner: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let burn_salt: String = String::from_str(&e, "SALT2");
     let (_, token_address, client) = deploy_token(&e);
     let (_, redemption_address, _) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -633,9 +751,9 @@ fn test_burn_should_require_auth_and_burn_and_emit_a_burn_event() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &burner, &BURNER_ROLE);
-    client.mint(&redemption_address, &amount, &minter);
+    client.mint(&redemption_address, &amount, &minter, &mint_salt);
 
-    client.burn(&redemption_address, &amount, &burner);
+    client.burn(&redemption_address, &amount, &burner, &burn_salt);
 
     let auths = e.auths();
     assert_eq!(auths.len(), 1);
@@ -672,6 +790,8 @@ fn test_burn_should_fail_if_not_burner() {
     let amount: i128 = 1000000;
     let minter: Address = Address::generate(&e);
     let burner: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let burn_salt: String = String::from_str(&e, "SALT2");
     let (_, _, client) = deploy_token(&e);
     let (_, redemption_address, _) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -680,9 +800,33 @@ fn test_burn_should_fail_if_not_burner() {
     client.set_redemption(&redemption_address);
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
-    client.mint(&redemption_address, &amount, &minter);
+    client.mint(&redemption_address, &amount, &minter, &mint_salt);
 
-    let result = client.try_burn(&redemption_address, &amount, &burner);
+    let result = client.try_burn(&redemption_address, &amount, &burner, &burn_salt);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_burn_should_fail_if_salt_is_already_used() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let minter: Address = Address::generate(&e);
+    let burner: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let burn_salt: String = String::from_str(&e, "SALT2");
+    let (_, _, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &burner, &BURNER_ROLE);
+    client.mint(&redemption_address, &(amount * 3), &minter, &mint_salt);
+
+    client.burn(&redemption_address, &amount, &burner, &burn_salt);
+    let result = client.try_burn(&redemption_address, &amount, &burner, &burn_salt);
 
     assert!(result.is_err());
 }
@@ -695,6 +839,8 @@ fn test_burn_batch_should_require_auth_and_burn_and_emit_a_burn_events() {
     let amount: i128 = 1000000;
     let minter: Address = Address::generate(&e);
     let burner: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let burn_salt: String = String::from_str(&e, "SALT2");
     let (_, token_address, client) = deploy_token(&e);
     let (_, redemption_address, _) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -703,12 +849,12 @@ fn test_burn_batch_should_require_auth_and_burn_and_emit_a_burn_events() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &burner, &BURNER_ROLE);
-    client.mint(&redemption_address, &amount, &minter);
+    client.mint(&redemption_address, &amount, &minter, &mint_salt);
     let mut operations = Vec::new(&e);
     operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
     operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
 
-    client.burn_batch(&operations, &burner);
+    client.burn_batch(&operations, &burner, &burn_salt);
 
     let auths = e.auths();
     assert_eq!(auths.len(), 1);
@@ -758,6 +904,8 @@ fn test_burn_batch_should_fail_if_not_burner() {
     let amount: i128 = 1000000;
     let minter: Address = Address::generate(&e);
     let burner: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let burn_salt: String = String::from_str(&e, "SALT2");
     let (_, _, client) = deploy_token(&e);
     let (_, redemption_address, _) = deploy_redemption(&e);
     let (admin, permission_manager_address, permission_manager_client) =
@@ -766,12 +914,39 @@ fn test_burn_batch_should_fail_if_not_burner() {
     client.set_redemption(&redemption_address);
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
-    client.mint(&redemption_address, &amount, &minter);
+    client.mint(&redemption_address, &amount, &minter, &mint_salt);
     let mut operations = Vec::new(&e);
     operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
     operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
 
-    let result = client.try_burn_batch(&operations, &burner);
+    let result = client.try_burn_batch(&operations, &burner, &burn_salt);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_burn_batch_should_fail_if_salt_is_already_used() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let minter: Address = Address::generate(&e);
+    let burner: Address = Address::generate(&e);
+    let mint_salt: String = String::from_str(&e, "SALT");
+    let burn_salt: String = String::from_str(&e, "SALT2");
+    let (_, _, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &burner, &BURNER_ROLE);
+    client.mint(&redemption_address, &(amount * 3), &minter, &mint_salt);
+    let mut operations = Vec::new(&e);
+    operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
+    operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
+
+    client.burn_batch(&operations, &burner, &burn_salt);
+    let result = client.try_burn_batch(&operations, &burner, &burn_salt);
 
     assert!(result.is_err());
 }
