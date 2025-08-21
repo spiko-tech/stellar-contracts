@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Compatible with OpenZeppelin Stellar Soroban Contracts ^0.4.1
-
 use soroban_sdk::{contract, contractimpl, Address, Env, Symbol, Vec};
 use stellar_access::access_control::{self as access_control, AccessControl};
 use stellar_contract_utils::upgradeable::UpgradeableInternal;
