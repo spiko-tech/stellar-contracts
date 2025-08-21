@@ -7,7 +7,7 @@ use stellar_contract_utils::pausable::{self as pausable, Pausable};
 use stellar_contract_utils::upgradeable::UpgradeableInternal;
 use stellar_macros::{default_impl, only_owner, when_not_paused, Upgradeable};
 use stellar_tokens::fungible::burnable::emit_burn;
-use stellar_tokens::fungible::{Base, FungibleToken};
+use stellar_tokens::fungible::Base;
 
 use contracts_utils::role::{BURNER_ROLE, MINTER_ROLE, PAUSER_ROLE, WHITELISTED_ROLE};
 
@@ -66,32 +66,45 @@ impl Token {
         e.storage().persistent().set(&REDEMPTION_KEY, &redemption);
     }
 
+    fn assert_salt_not_used(e: &Env, salt: &String) {
+        let salt_already_used: bool = e.storage().persistent().get(salt).unwrap_or(false);
+        assert!(!salt_already_used, "Salt already used");
+    }
+
+    fn consume_salt(e: &Env, salt: &String) {
+        e.storage().persistent().set(salt, &true);
+    }
+
     fn auth_mint(e: &Env, caller: Address) {
         caller.require_auth();
         Self::assert_has_role(e, &caller, &MINTER_ROLE);
     }
 
     #[when_not_paused]
-    pub fn mint(e: &Env, account: Address, amount: i128, caller: Address) {
+    pub fn mint(e: &Env, account: Address, amount: i128, caller: Address, salt: String) {
         Self::auth_mint(e, caller);
-
         Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
+        Self::assert_salt_not_used(e, &salt);
+
         Base::mint(e, &account, amount);
+        Self::consume_salt(e, &salt);
     }
 
     #[when_not_paused]
-    pub fn mint_batch(e: &Env, operations: Vec<MintBatchOperation>, caller: Address) {
+    pub fn mint_batch(e: &Env, operations: Vec<MintBatchOperation>, caller: Address, salt: String) {
         Self::auth_mint(e, caller);
-
         for operation in &operations {
             let account = operation.0;
             Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
         }
+        Self::assert_salt_not_used(e, &salt);
+
         for operation in &operations {
             let account = operation.0;
             let amount = operation.1;
             Base::mint(e, &account, amount);
         }
+        Self::consume_salt(e, &salt);
     }
 
     fn auth_burn(e: &Env, caller: Address) {
@@ -105,25 +118,30 @@ impl Token {
     }
 
     #[when_not_paused]
-    pub fn burn(e: &Env, account: Address, amount: i128, caller: Address) {
+    pub fn burn(e: &Env, account: Address, amount: i128, caller: Address, salt: String) {
         Self::auth_burn(e, caller);
+        Self::assert_salt_not_used(e, &salt);
         Self::burn_no_auth(e, account, amount);
+        Self::consume_salt(e, &salt);
     }
 
     #[when_not_paused]
-    pub fn burn_batch(e: &Env, operations: Vec<BurnBatchOperation>, caller: Address) {
+    pub fn burn_batch(e: &Env, operations: Vec<BurnBatchOperation>, caller: Address, salt: String) {
         Self::auth_burn(e, caller);
+        Self::assert_salt_not_used(e, &salt);
         for operation in &operations {
             let account = operation.0;
             let amount = operation.1;
             Self::burn_no_auth(e, account, amount);
         }
+        Self::consume_salt(e, &salt);
     }
 
     #[when_not_paused]
     pub fn redeem(e: &Env, amount: i128, salt: String, caller: Address) {
         assert!(amount > 0, "Redemption amount should be more than zero");
         Self::assert_has_role(e, &caller, &WHITELISTED_ROLE);
+        Self::assert_salt_not_used(e, &salt);
 
         let redemption: Address = e
             .storage()
@@ -135,52 +153,36 @@ impl Token {
 
         Base::transfer(e, &caller, &redemption, amount);
         client.on_redeem(&e.current_contract_address(), &caller, &amount, &salt);
+        Self::consume_salt(e, &salt);
     }
-}
-
-#[contractimpl]
-impl FungibleToken for Token {
-    type ContractType = Base;
 
     #[when_not_paused]
-    fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
+    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128, salt: String) {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
+        Self::assert_salt_not_used(e, &salt);
         Base::transfer(e, &from, &to, amount);
+        Self::consume_salt(e, &salt);
     }
 
-    fn transfer_from(e: &Env, spender: Address, from: Address, to: Address, amount: i128) {
-        Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
-        Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
-        Base::transfer_from(e, &spender, &from, &to, amount);
-    }
-
-    fn total_supply(e: &Env) -> i128 {
+    pub fn total_supply(e: &Env) -> i128 {
         Base::total_supply(e)
     }
 
-    fn balance(e: &Env, account: Address) -> i128 {
+    pub fn balance(e: &Env, account: Address) -> i128 {
         Base::balance(e, &account)
     }
 
-    fn decimals(e: &Env) -> u32 {
+    pub fn decimals(e: &Env) -> u32 {
         Base::decimals(e)
     }
 
-    fn name(e: &Env) -> String {
+    pub fn name(e: &Env) -> String {
         Base::name(e)
     }
 
-    fn symbol(e: &Env) -> String {
+    pub fn symbol(e: &Env) -> String {
         Base::symbol(e)
-    }
-
-    fn allowance(e: &Env, owner: Address, spender: Address) -> i128 {
-        Base::allowance(e, &owner, &spender)
-    }
-
-    fn approve(e: &Env, owner: Address, spender: Address, amount: i128, live_until_ledger: u32) {
-        Base::approve(e, &owner, &spender, amount, live_until_ledger);
     }
 }
 
