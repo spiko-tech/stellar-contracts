@@ -1,15 +1,13 @@
-use soroban_sdk::crypto::Hash;
-use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::{
-    contract, contractclient, contractimpl, contracttype, symbol_short, Address, Bytes, Env,
-    String, Symbol, Vec,
+    contract, contractclient, contractimpl, contracttype, symbol_short, Address, Env, String,
+    Symbol, Vec,
 };
 use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::pausable::{self as pausable, Pausable};
 use stellar_contract_utils::upgradeable::UpgradeableInternal;
 use stellar_macros::{default_impl, only_owner, when_not_paused, Upgradeable};
 use stellar_tokens::fungible::burnable::emit_burn;
-use stellar_tokens::fungible::Base;
+use stellar_tokens::fungible::{Base, FungibleToken};
 
 use contracts_utils::role::{BURNER_ROLE, MINTER_ROLE, PAUSER_ROLE, WHITELISTED_ROLE};
 
@@ -138,46 +136,51 @@ impl Token {
         Base::transfer(e, &caller, &redemption, amount);
         client.on_redeem(&e.current_contract_address(), &caller, &amount, &salt);
     }
+}
 
-    fn compute_transfer_hash(
-        e: &Env,
-        from: &Address,
-        to: &Address,
-        amount: i128,
-        salt: &String,
-    ) -> Hash<32> {
-        let mut transfer_entry_serialized: Bytes = from.clone().to_xdr(&e);
-        transfer_entry_serialized.append(&to.clone().to_xdr(&e));
-        transfer_entry_serialized.append(&amount.to_xdr(&e));
-        transfer_entry_serialized.append(&salt.clone().to_xdr(&e));
-        e.crypto().sha256(&transfer_entry_serialized)
-    }
+#[contractimpl]
+impl FungibleToken for Token {
+    type ContractType = Base;
 
     #[when_not_paused]
-    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
+    fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Base::transfer(e, &from, &to, amount);
     }
 
-    pub fn total_supply(e: &Env) -> i128 {
+    fn transfer_from(e: &Env, spender: Address, from: Address, to: Address, amount: i128) {
+        Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
+        Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
+        Base::transfer_from(e, &spender, &from, &to, amount);
+    }
+
+    fn total_supply(e: &Env) -> i128 {
         Base::total_supply(e)
     }
 
-    pub fn balance(e: &Env, account: Address) -> i128 {
+    fn balance(e: &Env, account: Address) -> i128 {
         Base::balance(e, &account)
     }
 
-    pub fn decimals(e: &Env) -> u32 {
+    fn decimals(e: &Env) -> u32 {
         Base::decimals(e)
     }
 
-    pub fn name(e: &Env) -> String {
+    fn name(e: &Env) -> String {
         Base::name(e)
     }
 
-    pub fn symbol(e: &Env) -> String {
+    fn symbol(e: &Env) -> String {
         Base::symbol(e)
+    }
+
+    fn allowance(e: &Env, owner: Address, spender: Address) -> i128 {
+        Base::allowance(e, &owner, &spender)
+    }
+
+    fn approve(e: &Env, owner: Address, spender: Address, amount: i128, live_until_ledger: u32) {
+        Base::approve(e, &owner, &spender, amount, live_until_ledger);
     }
 }
 
