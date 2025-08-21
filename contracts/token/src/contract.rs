@@ -13,6 +13,7 @@ use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::pausable::{self as pausable, Pausable};
 use stellar_contract_utils::upgradeable::UpgradeableInternal;
 use stellar_macros::{default_impl, only_owner, when_not_paused, Upgradeable};
+use stellar_tokens::fungible::burnable::emit_burn;
 use stellar_tokens::fungible::Base;
 
 use contracts_utils::role::{BURNER_ROLE, MINTER_ROLE, PAUSER_ROLE, WHITELISTED_ROLE};
@@ -37,6 +38,10 @@ pub const REDEMPTION_KEY: Symbol = symbol_short!("REDEMP");
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MintBatchOperation(pub Address, pub i128);
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BurnBatchOperation(pub Address, pub i128);
 
 #[contractimpl]
 impl Token {
@@ -94,20 +99,24 @@ impl Token {
     }
 
     #[when_not_paused]
-    pub fn burn(e: &Env, account: Address, amount: i128) {
-        Self::assert_has_role(e, &account, &BURNER_ROLE);
+    pub fn burn(e: &Env, account: Address, amount: i128, caller: Address) {
+        caller.require_auth();
+        Self::assert_has_role(e, &caller, &BURNER_ROLE);
+        Base::update(e, Some(&account), None, amount);
+        emit_burn(e, &account, amount);
+    }
 
-        let redemption: Address = e
-            .storage()
-            .persistent()
-            .get(&REDEMPTION_KEY)
-            .expect("Redemption not set");
-        assert!(
-            redemption == account,
-            "Only tokens on redemption contract can be burned"
-        );
+    #[when_not_paused]
+    pub fn burn_batch(e: &Env, operations: Vec<BurnBatchOperation>, caller: Address) {
+        caller.require_auth();
+        Self::assert_has_role(e, &caller, &BURNER_ROLE);
 
-        Base::burn(e, &account, amount);
+        for operation in &operations {
+            let account = operation.0;
+            let amount = operation.1;
+            Base::update(e, Some(&account), None, amount);
+            emit_burn(e, &account, amount);
+        }
     }
 
     #[when_not_paused]
