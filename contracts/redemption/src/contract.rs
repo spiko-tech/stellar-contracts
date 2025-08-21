@@ -129,43 +129,7 @@ impl Redemption {
         );
     }
 
-    pub fn execute_redemption(
-        e: &Env,
-        caller: Address,
-        token: Address,
-        from: Address,
-        amount: i128,
-        salt: String,
-    ) {
-        caller.require_auth();
-        Self::assert_has_role(e, &caller, &REDEMPTION_EXECUTOR_ROLE);
-        Self::assert_token_registered(e, &token);
-
-        let client: TokenClient<'_> = TokenClient::new(e, &token);
-
-        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
-
-        let redemption_status: RedemptionStatus = e
-            .storage()
-            .persistent()
-            .get(&redemption_hash)
-            .unwrap_or(RedemptionStatus::Null);
-        assert!(
-            redemption_status == RedemptionStatus::Pending,
-            "Redemption not pending"
-        );
-
-        client.burn(&from, &amount);
-        e.storage()
-            .persistent()
-            .set(&redemption_hash, &RedemptionStatus::Executed);
-        e.events().publish(
-            (REDEMPTION_EVENT, REDEMPTION_EXECUTED_EVENT),
-            RedemptionEntry(token, from, amount, salt),
-        );
-    }
-
-    pub fn execute_redemption_batch(
+    pub fn execute_redemptions(
         e: &Env,
         caller: Address,
         operations: Vec<ExecuteRedemptionOperation>,
