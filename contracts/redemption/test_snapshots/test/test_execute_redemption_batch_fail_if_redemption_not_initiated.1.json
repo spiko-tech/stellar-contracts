@@ -106,10 +106,7 @@
                   }
                 },
                 {
-                  "u128": {
-                    "hi": 0,
-                    "lo": 100
-                  }
+                  "string": "SALT1"
                 }
               ]
             }
@@ -201,7 +198,7 @@
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
             "key": {
-              "bytes": "c48e7246c9b7f22ef008001f0d153f853f02960111476b61883948c5df2b378f"
+              "bytes": "cda8b045bd71d8ce09764e01c2a9fd0e1dc0298fa79b4c340dd6fb4b8e720dc6"
             },
             "durability": "persistent"
           }
@@ -214,7 +211,7 @@
                 "ext": "v0",
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
                 "key": {
-                  "bytes": "c48e7246c9b7f22ef008001f0d153f853f02960111476b61883948c5df2b378f"
+                  "bytes": "cda8b045bd71d8ce09764e01c2a9fd0e1dc0298fa79b4c340dd6fb4b8e720dc6"
                 },
                 "durability": "persistent",
                 "val": {
