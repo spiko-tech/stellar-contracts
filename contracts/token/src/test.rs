@@ -324,7 +324,7 @@ fn test_redeem_should_require_auth_and_redeem_and_emit_a_redeem_event_and_call_r
 ) {
     let e = setup_env();
     let amount: i128 = 1000000;
-    let salt: u128 = 1234567890;
+    let salt: String = String::from_str(&e, "SALT");
     let user: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
     let (_, token_address, client) = deploy_token(&e);
@@ -401,7 +401,7 @@ fn test_redeem_should_require_auth_and_redeem_and_emit_a_redeem_event_and_call_r
 fn test_redeem_should_fail_if_amount_is_not_positive() {
     let e = setup_env();
     let amount: i128 = 0;
-    let salt: u128 = 1234567890;
+    let salt: String = String::from_str(&e, "SALT");
     let user: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
     let (_, token_address, client) = deploy_token(&e);
@@ -425,7 +425,7 @@ fn test_redeem_should_fail_if_amount_is_not_positive() {
 fn test_redeem_should_fail_if_user_is_not_whitelisted() {
     let e = setup_env();
     let amount: i128 = 1000000;
-    let salt: u128 = 1234567890;
+    let salt: String = String::from_str(&e, "SALT");
     let user: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
     let (_, token_address, client) = deploy_token(&e);
@@ -450,7 +450,7 @@ fn test_redeem_should_fail_if_user_is_not_whitelisted() {
 fn test_redeem_should_fail_if_redemption_contract_is_not_whitelisted() {
     let e = setup_env();
     let amount: i128 = 1000000;
-    let salt: u128 = 1234567890;
+    let salt: String = String::from_str(&e, "SALT");
     let user: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
     let (_, token_address, client) = deploy_token(&e);
@@ -475,7 +475,7 @@ fn test_redeem_should_fail_if_redemption_contract_is_not_whitelisted() {
 fn test_redeem_should_fail_if_not_enough_balance() {
     let e = setup_env();
     let amount: i128 = 1000000;
-    let salt: u128 = 1234567890;
+    let salt: String = String::from_str(&e, "SALT");
     let user: Address = Address::generate(&e);
     let minter: Address = Address::generate(&e);
     let (_, token_address, client) = deploy_token(&e);
