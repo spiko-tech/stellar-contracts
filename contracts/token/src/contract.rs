@@ -154,7 +154,7 @@ impl Token {
     }
 
     #[when_not_paused]
-    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128, salt: String) {
+    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Base::transfer(e, &from, &to, amount);
