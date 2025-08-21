@@ -13,7 +13,6 @@ use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::pausable::{self as pausable, Pausable};
 use stellar_contract_utils::upgradeable::UpgradeableInternal;
 use stellar_macros::{default_impl, only_owner, when_not_paused, Upgradeable};
-use stellar_tokens::fungible::burnable::FungibleBurnable;
 use stellar_tokens::fungible::{Base, FungibleToken};
 
 use contracts_utils::role::{BURNER_ROLE, MINTER_ROLE, PAUSER_ROLE, WHITELISTED_ROLE};
@@ -95,6 +94,23 @@ impl Token {
     }
 
     #[when_not_paused]
+    pub fn burn(e: &Env, account: Address, amount: i128) {
+        Self::assert_has_role(e, &account, &BURNER_ROLE);
+
+        let redemption: Address = e
+            .storage()
+            .persistent()
+            .get(&REDEMPTION_KEY)
+            .expect("Redemption not set");
+        assert!(
+            redemption == account,
+            "Only tokens on redemption contract can be burned"
+        );
+
+        Base::burn(e, &account, amount);
+    }
+
+    #[when_not_paused]
     pub fn redeem(e: &Env, amount: i128, salt: u128, caller: Address) {
         assert!(amount > 0, "Redemption amount should be more than zero");
         Self::assert_has_role(e, &caller, &WHITELISTED_ROLE);
@@ -122,27 +138,6 @@ impl FungibleToken for Token {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Base::transfer(e, &from, &to, amount);
-    }
-}
-
-#[default_impl]
-#[contractimpl]
-impl FungibleBurnable for Token {
-    #[when_not_paused]
-    fn burn(e: &Env, account: Address, amount: i128) {
-        Self::assert_has_role(e, &account, &BURNER_ROLE);
-
-        let redemption: Address = e
-            .storage()
-            .persistent()
-            .get(&REDEMPTION_KEY)
-            .expect("Redemption not set");
-        assert!(
-            redemption == account,
-            "Only tokens on redemption contract can be burned"
-        );
-
-        Base::burn(e, &account, amount);
     }
 }
 
