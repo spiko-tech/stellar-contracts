@@ -1,6 +1,8 @@
+use soroban_sdk::crypto::Hash;
+use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::{
-    contract, contractclient, contractimpl, contracttype, symbol_short, Address, Env, String,
-    Symbol, Vec,
+    contract, contractclient, contractimpl, contracttype, symbol_short, Address, Bytes, Env,
+    String, Symbol, Vec,
 };
 use stellar_access::ownable::{self as ownable, Ownable};
 use stellar_contract_utils::pausable::{self as pausable, Pausable};
@@ -66,24 +68,27 @@ impl Token {
         e.storage().persistent().set(&REDEMPTION_KEY, &redemption);
     }
 
-    #[when_not_paused]
-    pub fn mint(e: &Env, account: Address, amount: i128, caller: Address) {
+    fn auth_mint(e: &Env, caller: Address) {
         caller.require_auth();
         Self::assert_has_role(e, &caller, &MINTER_ROLE);
+    }
+
+    #[when_not_paused]
+    pub fn mint(e: &Env, account: Address, amount: i128, caller: Address) {
+        Self::auth_mint(e, caller);
+
         Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
         Base::mint(e, &account, amount);
     }
 
     #[when_not_paused]
     pub fn mint_batch(e: &Env, operations: Vec<MintBatchOperation>, caller: Address) {
-        caller.require_auth();
-        Self::assert_has_role(e, &caller, &MINTER_ROLE);
+        Self::auth_mint(e, caller);
 
         for operation in &operations {
             let account = operation.0;
             Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
         }
-
         for operation in &operations {
             let account = operation.0;
             let amount = operation.1;
@@ -91,24 +96,29 @@ impl Token {
         }
     }
 
-    #[when_not_paused]
-    pub fn burn(e: &Env, account: Address, amount: i128, caller: Address) {
+    fn auth_burn(e: &Env, caller: Address) {
         caller.require_auth();
         Self::assert_has_role(e, &caller, &BURNER_ROLE);
+    }
+
+    fn burn_no_auth(e: &Env, account: Address, amount: i128) {
         Base::update(e, Some(&account), None, amount);
         emit_burn(e, &account, amount);
     }
 
     #[when_not_paused]
-    pub fn burn_batch(e: &Env, operations: Vec<BurnBatchOperation>, caller: Address) {
-        caller.require_auth();
-        Self::assert_has_role(e, &caller, &BURNER_ROLE);
+    pub fn burn(e: &Env, account: Address, amount: i128, caller: Address) {
+        Self::auth_burn(e, caller);
+        Self::burn_no_auth(e, account, amount);
+    }
 
+    #[when_not_paused]
+    pub fn burn_batch(e: &Env, operations: Vec<BurnBatchOperation>, caller: Address) {
+        Self::auth_burn(e, caller);
         for operation in &operations {
             let account = operation.0;
             let amount = operation.1;
-            Base::update(e, Some(&account), None, amount);
-            emit_burn(e, &account, amount);
+            Self::burn_no_auth(e, account, amount);
         }
     }
 
@@ -129,8 +139,22 @@ impl Token {
         client.on_redeem(&e.current_contract_address(), &caller, &amount, &salt);
     }
 
+    fn compute_transfer_hash(
+        e: &Env,
+        from: &Address,
+        to: &Address,
+        amount: i128,
+        salt: &String,
+    ) -> Hash<32> {
+        let mut transfer_entry_serialized: Bytes = from.clone().to_xdr(&e);
+        transfer_entry_serialized.append(&to.clone().to_xdr(&e));
+        transfer_entry_serialized.append(&amount.to_xdr(&e));
+        transfer_entry_serialized.append(&salt.clone().to_xdr(&e));
+        e.crypto().sha256(&transfer_entry_serialized)
+    }
+
     #[when_not_paused]
-    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
+    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128, salt: String) {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Base::transfer(e, &from, &to, amount);
