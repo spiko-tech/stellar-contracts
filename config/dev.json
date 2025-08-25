@@ -1,0 +1,10 @@
+{
+    "tokens": {
+        "EUTBL": { "name": "ALPH", "symbol": "ALP", "decimals": 5 },
+        "USTBL": { "name": "BETA", "symbol": "BET", "decimals": 5 },
+        "EUR_USTBL": { "name": "GAMMA", "symbol": "GAM", "decimals": 5 },
+        "UKTBL": { "name": "DELTA", "symbol": "DEL", "decimals": 5 },
+        "SPKCC": { "name": "EPSILON", "symbol": "EPS", "decimals": 5 },
+        "EUR_SPKCC": { "name": "ZETA", "symbol": "ZET", "decimals": 5 }
+    }
+}

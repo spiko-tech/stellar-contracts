@@ -31,10 +31,10 @@ PERMISSION_MANAGER_ADDRESS=$(jq -r '.permissionManager' "$JSON_FILE")
 REDEMPTION_ADDRESS=$(jq -r '.redemption' "$JSON_FILE")
 EUTBL_ADDRESS=$(jq -r '.tokens.EUTBL' "$JSON_FILE")
 USTBL_ADDRESS=$(jq -r '.tokens.USTBL' "$JSON_FILE")
-EUR_USTBL_ADDRESS=$(jq -r '.tokens.eurUSTBL' "$JSON_FILE")
+EUR_USTBL_ADDRESS=$(jq -r '.tokens.EUR_USTBL' "$JSON_FILE")
 UKTBL_ADDRESS=$(jq -r '.tokens.UKTBL' "$JSON_FILE")
 SPKCC_ADDRESS=$(jq -r '.tokens.SPKCC' "$JSON_FILE")
-EUR_SPKCC_ADDRESS=$(jq -r '.tokens.eurSPKCC' "$JSON_FILE")
+EUR_SPKCC_ADDRESS=$(jq -r '.tokens.EUR_SPKCC' "$JSON_FILE")
 
 RELAYER_ADDRESS=GB7BUX5B2UCSPTBC3UX4O6MRO5OPEZV2CK7FEVONU5Q7WEISLRRNT3S7
 
@@ -291,7 +291,7 @@ give_whitelisted_role_to_redemption() {
     { set +x; } 2>/dev/null
 }
 
-give_redemption_executor_role_to_redemption() {
+give_burner_role_to_redemption() {
     set -x
     stellar contract invoke \
       --id $PERMISSION_MANAGER_ADDRESS \
@@ -301,7 +301,7 @@ give_redemption_executor_role_to_redemption() {
       grant_role \
       --caller $STELLAR_PROFILE \
       --account $REDEMPTION_ADDRESS \
-      --role REXECUTOR
+      --role BURNER
     { set +x; } 2>/dev/null
 }
 
@@ -330,6 +330,20 @@ give_minter_role_to_relayer() {
       --caller $STELLAR_PROFILE \
       --account $RELAYER_ADDRESS \
       --role MINTER
+    { set +x; } 2>/dev/null
+}
+
+give_redemption_executor_role_to_relayer() {
+    set -x
+    stellar contract invoke \
+      --id $PERMISSION_MANAGER_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      grant_role \
+      --caller $STELLAR_PROFILE \
+      --account $RELAYER_ADDRESS \
+      --role REXECUTOR
     { set +x; } 2>/dev/null
 }
 
@@ -411,8 +425,10 @@ echo "🔄 Setup Role"
 echo "---> Give WHITELISTED_ROLE to redemption"
 give_whitelisted_role_to_redemption
 echo "---> Give REDEMPTION_EXECUTOR_ROLE to redemption"
-give_redemption_executor_role_to_redemption
+give_burner_role_to_redemption
 echo "---> Give WHITELISTER_ROLE to relayer"
 give_whitelister_role_to_relayer
 echo "---> Give MINTER_ROLE to relayer"
 give_minter_role_to_relayer
+echo "---> Give REDEMPTION_EXECUTOR_ROLE to relayer"
+give_redemption_executor_role_to_relayer
