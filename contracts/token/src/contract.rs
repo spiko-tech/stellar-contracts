@@ -166,7 +166,7 @@ impl Token {
             .get(&REDEMPTION_KEY)
             .expect("Redemption not set");
         let client: RedemptionClient<'_> = RedemptionClient::new(e, &redemption);
-        Self::assert_has_role(e, &redemption, &WHITELISTED_ROLE);
+        Self::assert_has_role(e, &redemption, &WHITELISTED_ROLE); // TODO: remove this
 
         Base::transfer(e, &caller, &redemption, amount);
         client.on_redeem(
@@ -179,7 +179,20 @@ impl Token {
     }
 
     #[when_not_paused]
-    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128, idempotency_key: String) {
+    pub fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
+        Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
+        Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
+        Base::transfer(e, &from, &to, amount);
+    }
+
+    #[when_not_paused]
+    pub fn safe_transfer(
+        e: &Env,
+        from: Address,
+        to: Address,
+        amount: i128,
+        idempotency_key: String,
+    ) {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Self::assert_idempotency_key_not_used(e, &idempotency_key);

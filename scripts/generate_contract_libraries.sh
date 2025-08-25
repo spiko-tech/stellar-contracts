@@ -24,10 +24,10 @@ PERMISSION_MANAGER_ADDRESS=$(jq -r '.permissionManager' "$JSON_FILE")
 REDEMPTION_ADDRESS=$(jq -r '.redemption' "$JSON_FILE")
 EUTBL_ADDRESS=$(jq -r '.tokens.EUTBL' "$JSON_FILE")
 USTBL_ADDRESS=$(jq -r '.tokens.USTBL' "$JSON_FILE")
-EUR_USTBL_ADDRESS=$(jq -r '.tokens.eurUSTBL' "$JSON_FILE")
+EUR_USTBL_ADDRESS=$(jq -r '.tokens.EUR_USTBL' "$JSON_FILE")
 UKTBL_ADDRESS=$(jq -r '.tokens.UKTBL' "$JSON_FILE")
 SPKCC_ADDRESS=$(jq -r '.tokens.SPKCC' "$JSON_FILE")
-EUR_SPKCC_ADDRESS=$(jq -r '.tokens.eurSPKCC' "$JSON_FILE")
+EUR_SPKCC_ADDRESS=$(jq -r '.tokens.EUR_SPKCC' "$JSON_FILE")
 
 generate_permission_manager_library() {
     set -x

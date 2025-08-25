@@ -582,7 +582,7 @@ fn test_redeem_should_fail_if_idempotency_key_is_already_used() {
 //// transfer
 
 #[test]
-fn test_transfer_should_transfer_tokens_and_emit_a_transfer_event() {
+fn test_safe_transfer_should_transfer_tokens_and_emit_a_transfer_event() {
     let e = setup_env();
     let amount: i128 = 1000000;
     let user1: Address = Address::generate(&e);
@@ -599,7 +599,7 @@ fn test_transfer_should_transfer_tokens_and_emit_a_transfer_event() {
     permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
     client.mint(&user1, &amount, &minter, &mint_idempotency_key);
 
-    client.transfer(&user1, &user2, &amount, &transfer_idempotency_key);
+    client.safe_transfer(&user1, &user2, &amount, &transfer_idempotency_key);
 
     let auths = e.auths();
     assert_eq!(auths.len(), 1);
@@ -639,7 +639,7 @@ fn test_transfer_should_transfer_tokens_and_emit_a_transfer_event() {
 }
 
 #[test]
-fn test_transfer_should_fail_if_user1_is_not_whitelisted() {
+fn test_safe_transfer_should_fail_if_user1_is_not_whitelisted() {
     let e = setup_env();
     let amount: i128 = 1000000;
     let user1: Address = Address::generate(&e);
@@ -657,13 +657,13 @@ fn test_transfer_should_fail_if_user1_is_not_whitelisted() {
     client.mint(&user1, &amount, &minter, &mint_idempotency_key);
     permission_manager_client.revoke_role(&admin, &user1, &WHITELISTED_ROLE);
 
-    let result = client.try_transfer(&user1, &user2, &amount, &transfer_idempotency_key);
+    let result = client.try_safe_transfer(&user1, &user2, &amount, &transfer_idempotency_key);
 
     assert!(result.is_err());
 }
 
 #[test]
-fn test_transfer_should_fail_if_user2_is_not_whitelisted() {
+fn test_safe_transfer_should_fail_if_user2_is_not_whitelisted() {
     let e = setup_env();
     let amount: i128 = 1000000;
     let user1: Address = Address::generate(&e);
@@ -681,7 +681,7 @@ fn test_transfer_should_fail_if_user2_is_not_whitelisted() {
     client.mint(&user1, &amount, &minter, &mint_idempotency_key);
     permission_manager_client.revoke_role(&admin, &user2, &WHITELISTED_ROLE);
 
-    let result = client.try_transfer(&user1, &user2, &amount, &transfer_idempotency_key);
+    let result = client.try_safe_transfer(&user1, &user2, &amount, &transfer_idempotency_key);
 
     assert!(result.is_err());
 }
@@ -704,7 +704,7 @@ fn test_transfer_should_fail_if_not_enough_balance() {
     permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
     client.mint(&user1, &(amount / 2), &minter, &mint_idempotency_key);
 
-    let result = client.try_transfer(&user1, &user2, &amount, &transfer_idempotency_key);
+    let result = client.try_safe_transfer(&user1, &user2, &amount, &transfer_idempotency_key);
 
     assert!(result.is_err());
 }
@@ -727,8 +727,8 @@ fn test_transfer_should_fail_if_idempotency_key_is_already_used() {
     permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
     client.mint(&user1, &(amount * 3), &minter, &mint_idempotency_key);
 
-    client.transfer(&user1, &user2, &amount, &transfer_idempotency_key);
-    let result = client.try_transfer(&user1, &user2, &amount, &transfer_idempotency_key);
+    client.safe_transfer(&user1, &user2, &amount, &transfer_idempotency_key);
+    let result = client.try_safe_transfer(&user1, &user2, &amount, &transfer_idempotency_key);
 
     assert!(result.is_err());
 }
