@@ -55,7 +55,7 @@ deploy_permission_manager() {
         --source $STELLAR_PROFILE \
         --network $NETWORK \
         --alias permission_manager_${ENVIRONMENT} \
-        --wasm wasm/permission_manager.wasm \
+        --wasm target/wasm32v1-none/release/permission_manager.wasm \
         -- \
         --admin $ADMIN_ADDRESS)
     { set +x; } 2>/dev/null
@@ -77,7 +77,7 @@ deploy_redemption() {
         --source $STELLAR_PROFILE \
         --network $NETWORK \
         --alias redemption_${ENVIRONMENT} \
-        --wasm wasm/redemption.wasm \
+        --wasm target/wasm32v1-none/release/redemption.wasm \
         -- \
         --owner $ADMIN_ADDRESS)
     { set +x; } 2>/dev/null
@@ -116,7 +116,7 @@ deploy_tokens() {
             --source $STELLAR_PROFILE \
             --network $NETWORK \
             --alias $(echo "$TOKEN_SYMBOL" | tr '[:upper:]' '[:lower:]')_${ENVIRONMENT} \
-            --wasm wasm/token.wasm \
+            --wasm target/wasm32v1-none/release/token.wasm \
             -- \
             --owner $ADMIN_ADDRESS \
             --name "$TOKEN_NAME" \

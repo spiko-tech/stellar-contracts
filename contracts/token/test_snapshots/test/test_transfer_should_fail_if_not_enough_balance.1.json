@@ -230,7 +230,7 @@
             "key": {
               "string": "IDEMPOTENCY_KEY"
             },
-            "durability": "persistent"
+            "durability": "temporary"
           }
         },
         [
@@ -243,7 +243,7 @@
                 "key": {
                   "string": "IDEMPOTENCY_KEY"
                 },
-                "durability": "persistent",
+                "durability": "temporary",
                 "val": {
                   "bool": true
                 }
@@ -251,7 +251,7 @@
             },
             "ext": "v0"
           },
-          4095
+          120960
         ]
       ],
       [
