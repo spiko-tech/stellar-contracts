@@ -36,6 +36,8 @@ pub struct MintBatchOperation(pub Address, pub i128);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BurnBatchOperation(pub Address, pub i128);
 
+const ONE_DAY_LEDGERS: u32 = 17_280;
+
 #[contractimpl]
 impl Token {
     pub fn __constructor(e: &Env, owner: Address, name: String, symbol: String, decimals: u32) {
@@ -69,7 +71,7 @@ impl Token {
     fn assert_idempotency_key_not_used(e: &Env, idempotency_key: &String) {
         let idempotency_key_already_used: bool = e
             .storage()
-            .persistent()
+            .temporary()
             .get(idempotency_key)
             .unwrap_or(false);
         assert!(
@@ -79,7 +81,10 @@ impl Token {
     }
 
     fn consume_idempotency_key(e: &Env, idempotency_key: &String) {
-        e.storage().persistent().set(idempotency_key, &true);
+        e.storage().temporary().set(idempotency_key, &true);
+        e.storage()
+            .temporary()
+            .extend_ttl(idempotency_key, ONE_DAY_LEDGERS, ONE_DAY_LEDGERS * 7);
     }
 
     fn auth_mint(e: &Env, caller: Address) {
