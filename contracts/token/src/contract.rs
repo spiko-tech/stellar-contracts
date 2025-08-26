@@ -93,13 +93,10 @@ impl Token {
     }
 
     #[when_not_paused]
-    pub fn mint(e: &Env, account: Address, amount: i128, caller: Address, idempotency_key: String) {
+    pub fn mint(e: &Env, account: Address, amount: i128, caller: Address) {
         Self::auth_mint(e, caller);
         Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
-        Self::assert_idempotency_key_not_used(e, &idempotency_key);
-
         Base::mint(e, &account, amount);
-        Self::consume_idempotency_key(e, &idempotency_key);
     }
 
     #[when_not_paused]
@@ -135,11 +132,9 @@ impl Token {
     }
 
     #[when_not_paused]
-    pub fn burn(e: &Env, account: Address, amount: i128, caller: Address, idempotency_key: String) {
+    pub fn burn(e: &Env, account: Address, amount: i128, caller: Address) {
         Self::auth_burn(e, caller);
-        Self::assert_idempotency_key_not_used(e, &idempotency_key);
         Self::burn_no_auth(e, account, amount);
-        Self::consume_idempotency_key(e, &idempotency_key);
     }
 
     #[when_not_paused]

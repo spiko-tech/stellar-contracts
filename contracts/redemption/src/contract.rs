@@ -15,7 +15,7 @@ pub trait PermissionManagerInterface {
 
 #[contractclient(name = "TokenClient")]
 pub trait TokenInterface {
-    fn burn(account: Address, amount: i128);
+    fn burn(account: Address, amount: i128, caller: Address);
     fn transfer(from: Address, to: Address, amount: i128);
 }
 
@@ -136,6 +136,7 @@ impl Redemption {
     ) {
         caller.require_auth();
         Self::assert_has_role(e, &caller, &REDEMPTION_EXECUTOR_ROLE);
+        let redemption_contract_address = e.current_contract_address();
 
         // check all operations are valid
         for operation in &operations {
@@ -169,7 +170,7 @@ impl Redemption {
 
             let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
 
-            client.burn(&from, &amount);
+            client.burn(&from, &amount, &redemption_contract_address);
             e.storage()
                 .persistent()
                 .set(&redemption_hash, &RedemptionStatus::Executed);
