@@ -28,7 +28,7 @@ mod token {
     pub struct Mock;
     #[contractimpl]
     impl TokenInterface for Mock {
-        fn burn(_account: Address, _amount: i128) {}
+        fn burn(_account: Address, _amount: i128, _caller: Address) {}
         fn transfer(_from: Address, _to: Address, _amount: i128) {}
     }
 }
