@@ -47,6 +47,9 @@ pub enum RedemptionStatus {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExecuteRedemptionOperation(pub Address, pub Address, pub i128, pub String);
 
+const ONE_DAY_LEDGERS: u32 = 17_280;
+const SIXTY_DAY_LEDGERS: u32 = ONE_DAY_LEDGERS * 60;
+
 #[contractimpl]
 impl Redemption {
     pub fn __constructor(e: &Env, owner: Address) {
@@ -104,25 +107,34 @@ impl Redemption {
         e.crypto().sha256(&redemption_entry_serialized)
     }
 
+    fn assert_redemption_status(e: &Env, redemption_hash: &Hash<32>, status: RedemptionStatus) {
+        let redemption_status: RedemptionStatus = e
+            .storage()
+            .persistent()
+            .get(redemption_hash)
+            .unwrap_or(RedemptionStatus::Null);
+        assert!(
+            redemption_status == status,
+            "Redemption not in proper status"
+        );
+    }
+
+    fn set_redemption_status(e: &Env, redemption_hash: &Hash<32>, status: RedemptionStatus) {
+        e.storage().persistent().set(redemption_hash, &status);
+        e.storage()
+            .persistent()
+            .extend_ttl(redemption_hash, SIXTY_DAY_LEDGERS, SIXTY_DAY_LEDGERS);
+    }
+
     pub fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: String) {
         token.require_auth();
         Self::assert_token_registered(e, &token);
 
         let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
 
-        let redemption_status: RedemptionStatus = e
-            .storage()
-            .persistent()
-            .get(&redemption_hash)
-            .unwrap_or(RedemptionStatus::Null);
-        assert!(
-            redemption_status == RedemptionStatus::Null,
-            "Redemption already exists"
-        );
+        Self::assert_redemption_status(e, &redemption_hash, RedemptionStatus::Null);
+        Self::set_redemption_status(e, &redemption_hash, RedemptionStatus::Pending);
 
-        e.storage()
-            .persistent()
-            .set(&redemption_hash, &RedemptionStatus::Pending);
         e.events().publish(
             (REDEMPTION_EVENT, REDEMPTION_INITIATED_EVENT),
             RedemptionEntry(token, from, amount, salt),
@@ -147,23 +159,13 @@ impl Redemption {
             Self::assert_token_registered(e, &token);
 
             let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
-
-            let redemption_status: RedemptionStatus = e
-                .storage()
-                .persistent()
-                .get(&redemption_hash)
-                .unwrap_or(RedemptionStatus::Null);
-            assert!(
-                redemption_status == RedemptionStatus::Pending,
-                "Redemption not pending"
-            );
+            Self::assert_redemption_status(e, &redemption_hash, RedemptionStatus::Pending);
 
             let client: TokenClient<'_> = TokenClient::new(e, &token);
 
             client.burn(&from, &amount, &redemption_contract_address);
-            e.storage()
-                .persistent()
-                .set(&redemption_hash, &RedemptionStatus::Executed);
+
+            Self::set_redemption_status(e, &redemption_hash, RedemptionStatus::Executed);
             e.events().publish(
                 (REDEMPTION_EVENT, REDEMPTION_EXECUTED_EVENT),
                 RedemptionEntry(token, from, amount, salt),
@@ -183,24 +185,14 @@ impl Redemption {
         Self::assert_has_role(e, &caller, &REDEMPTION_EXECUTOR_ROLE);
         Self::assert_token_registered(e, &token);
 
+        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
+        Self::assert_redemption_status(e, &redemption_hash, RedemptionStatus::Pending);
+
         let client: TokenClient<'_> = TokenClient::new(e, &token);
 
-        let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
-
-        let redemption_status: RedemptionStatus = e
-            .storage()
-            .persistent()
-            .get(&redemption_hash)
-            .unwrap_or(RedemptionStatus::Null);
-        assert!(
-            redemption_status == RedemptionStatus::Pending,
-            "Redemption not pending"
-        );
-
         client.transfer(&e.current_contract_address(), &from, &amount);
-        e.storage()
-            .persistent()
-            .set(&redemption_hash, &RedemptionStatus::Canceled);
+
+        Self::set_redemption_status(e, &redemption_hash, RedemptionStatus::Canceled);
         e.events().publish(
             (REDEMPTION_EVENT, REDEMPTION_CANCELLED_EVENT),
             RedemptionEntry(token, from, amount, salt),
