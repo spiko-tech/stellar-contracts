@@ -56,7 +56,7 @@ impl Redemption {
     fn assert_has_role(e: &Env, account: &Address, role: &Symbol) {
         let permission_manager: Address = e
             .storage()
-            .persistent()
+            .instance()
             .get(&PERMISSION_MANAGER_KEY)
             .expect("Permission manager not set");
         let client: PermissionManagerClient<'_> =
@@ -67,7 +67,7 @@ impl Redemption {
     fn assert_token_registered(e: &Env, token: &Address) {
         let token_set: bool = e
             .storage()
-            .persistent()
+            .instance()
             .get(&token)
             .expect("Caller should be token contract");
         assert!(token_set, "Caller should be token contract");
@@ -75,18 +75,18 @@ impl Redemption {
 
     #[only_owner]
     pub fn add_token(e: &Env, token_contract_address: Address) {
-        e.storage().persistent().set(&token_contract_address, &true);
+        e.storage().instance().set(&token_contract_address, &true);
     }
 
     #[only_owner]
     pub fn remove_token(e: &Env, token_contract_address: Address) {
-        e.storage().persistent().remove(&token_contract_address);
+        e.storage().instance().remove(&token_contract_address);
     }
 
     #[only_owner]
     pub fn set_permission_manager(e: &Env, permission_manager: Address) {
         e.storage()
-            .persistent()
+            .instance()
             .set(&PERMISSION_MANAGER_KEY, &permission_manager);
     }
 
