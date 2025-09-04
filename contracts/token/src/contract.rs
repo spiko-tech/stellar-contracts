@@ -107,14 +107,11 @@ impl Token {
         idempotency_key: String,
     ) {
         Self::auth_mint(e, caller);
-        for operation in &operations {
-            let account = operation.0;
-            Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
-        }
         Self::assert_idempotency_key_not_used(e, &idempotency_key);
 
         for operation in &operations {
             let account = operation.0;
+            Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
             let amount = operation.1;
             Base::mint(e, &account, amount);
         }
