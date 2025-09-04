@@ -48,7 +48,7 @@ impl Token {
     fn assert_has_role(e: &Env, account: &Address, role: &Symbol) {
         let permission_manager: Address = e
             .storage()
-            .persistent()
+            .instance()
             .get(&PERMISSION_MANAGER_KEY)
             .expect("Permission manager not set");
         let client: PermissionManagerClient<'_> =
@@ -59,13 +59,13 @@ impl Token {
     #[only_owner]
     pub fn set_permission_manager(e: &Env, permission_manager: Address) {
         e.storage()
-            .persistent()
+            .instance()
             .set(&PERMISSION_MANAGER_KEY, &permission_manager);
     }
 
     #[only_owner]
     pub fn set_redemption(e: &Env, redemption: Address) {
-        e.storage().persistent().set(&REDEMPTION_KEY, &redemption);
+        e.storage().instance().set(&REDEMPTION_KEY, &redemption);
     }
 
     fn assert_idempotency_key_not_used(e: &Env, idempotency_key: &String) {
@@ -159,7 +159,7 @@ impl Token {
 
         let redemption: Address = e
             .storage()
-            .persistent()
+            .instance()
             .get(&REDEMPTION_KEY)
             .expect("Redemption not set");
         let client: RedemptionClient<'_> = RedemptionClient::new(e, &redemption);
