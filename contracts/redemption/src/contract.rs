@@ -138,7 +138,6 @@ impl Redemption {
         Self::assert_has_role(e, &caller, &REDEMPTION_EXECUTOR_ROLE);
         let redemption_contract_address = e.current_contract_address();
 
-        // check all operations are valid
         for operation in &operations {
             let token = operation.0;
             let from = operation.1;
@@ -158,17 +157,8 @@ impl Redemption {
                 redemption_status == RedemptionStatus::Pending,
                 "Redemption not pending"
             );
-        }
-
-        for operation in &operations {
-            let token = operation.0;
-            let from = operation.1;
-            let amount = operation.2;
-            let salt = operation.3;
 
             let client: TokenClient<'_> = TokenClient::new(e, &token);
-
-            let redemption_hash = Self::compute_redemption_hash(e, &token, &from, amount, &salt);
 
             client.burn(&from, &amount, &redemption_contract_address);
             e.storage()
