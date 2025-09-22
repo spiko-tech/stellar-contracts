@@ -3,9 +3,10 @@
 extern crate std;
 
 use crate::contract::{BurnBatchOperation, MintBatchOperation};
+use redemption::ExecuteRedemptionOperation;
 
 use super::contract::{Token, TokenClient};
-use contracts_utils::role::{BURNER_ROLE, MINTER_ROLE, WHITELISTED_ROLE};
+use contracts_utils::role::{BURNER_ROLE, MINTER_ROLE, REDEMPTION_EXECUTOR_ROLE, WHITELISTED_ROLE};
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events},
@@ -1035,4 +1036,45 @@ fn test_burn_batch_should_fail_if_idempotency_key_is_already_used() {
     let result = client.try_burn_batch(&operations, &burner, &burn_idempotency_key);
 
     assert!(result.is_err());
+}
+
+//// Full redemption flow
+
+#[test]
+fn test_full_redemption_flow_should_burn_the_token() {
+    let e = setup_env();
+    let user: Address = Address::generate(&e);
+    let executor: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let redeem_idempotency_key: String = String::from_str(&e, "IDEMPOTENCY_KEY");
+    let (_, token_address, client) = deploy_token(&e);
+    let (_, redemption_address, redemption_client) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    client.set_redemption(&redemption_address);
+    redemption_client.add_token(&token_address);
+    redemption_client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &executor, &REDEMPTION_EXECUTOR_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &BURNER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+    let mut operations = Vec::new(&e);
+    operations.push_front(ExecuteRedemptionOperation(
+        token_address.clone(),
+        user.clone(),
+        1,
+        redeem_idempotency_key.clone(),
+    ));
+
+    client.mint(&user, &10, &minter);
+    client.redeem(&1, &user, &redeem_idempotency_key);
+    redemption_client.execute_redemptions(&executor, &operations);
+
+    let user_balance = client.balance(&user);
+    let redemption_balance = client.balance(&redemption_address);
+
+    assert_eq!(user_balance, 9);
+    assert_eq!(redemption_balance, 0);
 }

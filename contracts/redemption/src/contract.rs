@@ -163,7 +163,11 @@ impl Redemption {
 
             let client: TokenClient<'_> = TokenClient::new(e, &token);
 
-            client.burn(&from, &amount, &redemption_contract_address);
+            client.burn(
+                &redemption_contract_address,
+                &amount,
+                &redemption_contract_address,
+            );
 
             Self::set_redemption_status(e, &redemption_hash, RedemptionStatus::Executed);
             e.events().publish(
