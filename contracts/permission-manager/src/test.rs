@@ -23,7 +23,6 @@ fn deploy_permission_manager(e: &Env) -> (Address, PermissionManagerClient) {
         PermissionManagerArgs::__constructor(&admin.clone()),
     );
     let client = PermissionManagerClient::new(e, &contract_address);
-    client.initialize();
 
     (admin, client)
 }
