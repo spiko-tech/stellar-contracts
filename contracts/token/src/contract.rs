@@ -96,6 +96,7 @@ impl Token {
     pub fn mint(e: &Env, account: Address, amount: i128, caller: Address) {
         Self::auth_mint(e, caller);
         Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
+        assert!(amount > 0, "Invalid zero-amount mint");
         Base::mint(e, &account, amount);
     }
 
@@ -109,10 +110,13 @@ impl Token {
         Self::auth_mint(e, caller);
         Self::assert_idempotency_key_not_used(e, &idempotency_key);
 
+        assert!(operations.len() > 0, "Empty batch");
+
         for operation in &operations {
             let account = operation.0;
             Self::assert_has_role(e, &account, &WHITELISTED_ROLE);
             let amount = operation.1;
+            assert!(amount > 0, "Invalid zero-amount mint");
             Base::mint(e, &account, amount);
         }
         Self::consume_idempotency_key(e, &idempotency_key);
@@ -131,6 +135,7 @@ impl Token {
     #[when_not_paused]
     pub fn burn(e: &Env, account: Address, amount: i128, caller: Address) {
         Self::auth_burn(e, caller);
+        assert!(amount > 0, "Invalid zero-amount burn");
         Self::burn_no_auth(e, account, amount);
     }
 
@@ -143,9 +148,12 @@ impl Token {
     ) {
         Self::auth_burn(e, caller);
         Self::assert_idempotency_key_not_used(e, &idempotency_key);
+        assert!(operations.len() > 0, "Empty batch");
+
         for operation in &operations {
             let account = operation.0;
             let amount = operation.1;
+            assert!(amount > 0, "Invalid zero-amount burn");
             Self::burn_no_auth(e, account, amount);
         }
         Self::consume_idempotency_key(e, &idempotency_key);
@@ -179,6 +187,7 @@ impl Token {
     pub fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
+        assert!(amount > 0, "Invalid zero-amount transfer");
         Base::transfer(e, &from, &to, amount);
     }
 
@@ -193,6 +202,7 @@ impl Token {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
         Self::assert_has_role(e, &to, &WHITELISTED_ROLE);
         Self::assert_idempotency_key_not_used(e, &idempotency_key);
+        assert!(amount > 0, "Invalid zero-amount transfer");
         Base::transfer(e, &from, &to, amount);
         Self::consume_idempotency_key(e, &idempotency_key);
     }

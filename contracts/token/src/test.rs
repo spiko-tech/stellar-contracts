@@ -139,6 +139,24 @@ fn test_mint_should_emit_a_mint_event() {
 }
 
 #[test]
+fn test_mint_should_fail_if_amount_is_not_strictly_positive() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user: Address = Address::generate(&e);
+    let amount: i128 = 0;
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
+
+    let result = client.try_mint(&user, &amount, &minter);
+
+    assert!(result.is_err());
+}
+
+#[test]
 fn test_mint_should_require_auth_and_mint_and_emit_a_mint_event() {
     let e = setup_env();
     let minter: Address = Address::generate(&e);
@@ -269,6 +287,50 @@ fn test_mint_batch_should_require_auth_and_mint_and_emit_mint_events() {
     assert_eq!(balance1, amount1);
     let balance2 = client.balance(&user2);
     assert_eq!(balance2, amount2);
+}
+
+#[test]
+fn test_mint_batch_should_fail_if_operations_is_empty() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let idempotency_key: String = String::from_str(&e, "IDEMPOTENCY_KEY");
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    let operations = Vec::new(&e);
+
+    let result = client.try_mint_batch(&operations, &minter, &idempotency_key);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_mint_batch_should_fail_if_one_of_the_operations_is_not_strictly_positive() {
+    let e = setup_env();
+    let minter: Address = Address::generate(&e);
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let idempotency_key: String = String::from_str(&e, "IDEMPOTENCY_KEY");
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    let mut operations = Vec::new(&e);
+    operations.push_front(MintBatchOperation(user1.clone(), 0));
+    operations.push_front(MintBatchOperation(user2.clone(), 2000000));
+
+    let result = client.try_mint_batch(&operations, &minter, &idempotency_key);
+
+    assert!(result.is_err());
 }
 
 #[test]
@@ -442,7 +504,7 @@ fn test_redeem_should_fail_if_amount_is_not_positive() {
     permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
     permission_manager_client.grant_role(&admin, &user, &WHITELISTED_ROLE);
     permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
-    client.mint(&user, &amount, &minter);
+    client.mint(&user, &100, &minter);
 
     let result = client.try_redeem(&amount, &user, &redeem_idempotency_key);
 
@@ -548,7 +610,7 @@ fn test_redeem_should_fail_if_idempotency_key_is_already_used() {
     assert!(result.is_err());
 }
 
-//// transfer
+//// safe_transfer
 
 #[test]
 fn test_safe_transfer_should_transfer_tokens_and_emit_a_transfer_event() {
@@ -604,6 +666,28 @@ fn test_safe_transfer_should_transfer_tokens_and_emit_a_transfer_event() {
     assert_eq!(balance1, 0);
     let balance2 = client.balance(&user2);
     assert_eq!(balance2, amount);
+}
+
+#[test]
+fn test_safe_transfer_should_fail_if_amount_is_not_strictly_positive() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let user1: Address = Address::generate(&e);
+    let user2: Address = Address::generate(&e);
+    let minter: Address = Address::generate(&e);
+    let transfer_idempotency_key: String = String::from_str(&e, "IDEMPOTENCY_KEY2");
+    let (_, _, client) = deploy_token(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &user1, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &user2, &WHITELISTED_ROLE);
+    client.mint(&user1, &amount, &minter);
+
+    let result = client.try_safe_transfer(&user1, &user2, &0, &transfer_idempotency_key);
+
+    assert!(result.is_err());
 }
 
 #[test]
@@ -747,6 +831,27 @@ fn test_burn_should_require_auth_and_burn_and_emit_a_burn_event() {
 }
 
 #[test]
+fn test_burn_should_fail_if_amount_is_not_strictly_positive() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let minter: Address = Address::generate(&e);
+    let burner: Address = Address::generate(&e);
+    let (_, _, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &burner, &BURNER_ROLE);
+    client.mint(&redemption_address, &amount, &minter);
+
+    let result = client.try_burn(&redemption_address, &0, &burner);
+
+    assert!(result.is_err());
+}
+
+#[test]
 fn test_burn_should_fail_if_not_burner() {
     let e = setup_env();
     let amount: i128 = 1000000;
@@ -831,6 +936,54 @@ fn test_burn_batch_should_require_auth_and_burn_and_emit_a_burn_events() {
 
     let balance = client.balance(&redemption_address);
     assert_eq!(balance, 0);
+}
+
+#[test]
+fn test_burn_batch_should_fail_if_operations_is_empty() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let minter: Address = Address::generate(&e);
+    let burner: Address = Address::generate(&e);
+    let burn_idempotency_key: String = String::from_str(&e, "IDEMPOTENCY_KEY");
+    let (_, _, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &burner, &BURNER_ROLE);
+    client.mint(&redemption_address, &amount, &minter);
+    let operations = Vec::new(&e);
+
+    let result = client.try_burn_batch(&operations, &burner, &burn_idempotency_key);
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_burn_batch_should_fail_if_one_of_the_operations_is_not_strictly_positive() {
+    let e = setup_env();
+    let amount: i128 = 1000000;
+    let minter: Address = Address::generate(&e);
+    let burner: Address = Address::generate(&e);
+    let burn_idempotency_key: String = String::from_str(&e, "IDEMPOTENCY_KEY");
+    let (_, _, client) = deploy_token(&e);
+    let (_, redemption_address, _) = deploy_redemption(&e);
+    let (admin, permission_manager_address, permission_manager_client) =
+        deploy_permission_manager(&e);
+    client.set_permission_manager(&permission_manager_address);
+    permission_manager_client.grant_role(&admin, &minter, &MINTER_ROLE);
+    permission_manager_client.grant_role(&admin, &redemption_address, &WHITELISTED_ROLE);
+    permission_manager_client.grant_role(&admin, &burner, &BURNER_ROLE);
+    client.mint(&redemption_address, &amount, &minter);
+    let mut operations = Vec::new(&e);
+    operations.push_front(BurnBatchOperation(redemption_address.clone(), 0));
+    operations.push_front(BurnBatchOperation(redemption_address.clone(), amount / 2));
+
+    let result = client.try_burn_batch(&operations, &burner, &burn_idempotency_key);
+
+    assert!(result.is_err());
 }
 
 #[test]
