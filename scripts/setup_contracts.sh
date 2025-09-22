@@ -38,17 +38,6 @@ EUR_SPKCC_ADDRESS=$(jq -r '.tokens.EUR_SPKCC' "$JSON_FILE")
 
 RELAYER_ADDRESS=GB7BUX5B2UCSPTBC3UX4O6MRO5OPEZV2CK7FEVONU5Q7WEISLRRNT3S7
 
-initialize_permission_manager() {
-    set -x
-    stellar contract invoke \
-      --id $PERMISSION_MANAGER_ADDRESS \
-      --source $STELLAR_PROFILE \
-      --network ${NETWORK} \
-      -- \
-      initialize
-    { set +x; } 2>/dev/null
-}
-
 set_permission_manager_on_redemption() {
     set -x
     stellar contract invoke \
@@ -358,10 +347,6 @@ echo "  eurUSTBL: $EUR_USTBL_ADDRESS"
 echo "  UKTBL: $UKTBL_ADDRESS"
 echo "  SPKCC: $SPKCC_ADDRESS"
 echo "  eurSPKCC: $EUR_SPKCC_ADDRESS"
-
-echo "🔄 Setup Permission Manager"
-echo "---> Initialize"
-initialize_permission_manager
 
 echo "🔄 Setup Redemption"
 echo "---> Set Permission Manager"

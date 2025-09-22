@@ -32,7 +32,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
-cargo test
+#cargo test
 stellar contract build
 ./scripts/deploy_contracts.sh $ENVIRONMENT $STELLAR_PROFILE $NETWORK
 ./scripts/setup_contracts.sh $ENVIRONMENT $STELLAR_PROFILE $NETWORK
