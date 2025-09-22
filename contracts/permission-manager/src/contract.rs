@@ -40,6 +40,10 @@ impl PermissionManager {
 #[default_impl]
 #[contractimpl]
 impl AccessControl for PermissionManager {
+    fn renounce_admin(_: &Env) {
+        panic!("Cannot renounce admin");
+    }
+
     fn renounce_role(e: &Env, caller: Address, role: Symbol) {
         if role == WHITELISTED_ROLE {
             panic!("Cannot renounce whitelisted role");

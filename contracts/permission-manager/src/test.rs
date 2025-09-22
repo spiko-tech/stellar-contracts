@@ -194,3 +194,13 @@ fn test_revoke_role_batch_non_whitelister_role_should_not_be_able_to_revoke_whit
     };
     assert!(is_failure, "Expected function to fail, but it succeeded");
 }
+
+#[test]
+fn test_renounce_admin_should_panic() {
+    let e = setup_env();
+    let (_admin, client) = deploy_permission_manager(&e);
+
+    let result = client.try_renounce_admin();
+
+    assert!(result.is_err());
+}
