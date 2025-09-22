@@ -55,7 +55,6 @@ fn deploy_permission_manager(e: &Env) -> (Address, Address, permission_manager::
         permission_manager::Args::__constructor(&admin.clone()),
     );
     let permission_manager_client = permission_manager::Client::new(e, &permission_manager_address);
-    permission_manager_client.initialize();
 
     (admin, permission_manager_address, permission_manager_client)
 }
