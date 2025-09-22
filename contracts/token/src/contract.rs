@@ -56,6 +56,12 @@ impl Token {
         assert!(client.has_role(account, &role).is_some(), "Invalid role");
     }
 
+    /// Set the permission manager (central role management authority).
+    ///
+    /// # Arguments
+    ///
+    /// * `permission_manager` - The address of the permission manager.
+    ///
     #[only_owner]
     pub fn set_permission_manager(e: &Env, permission_manager: Address) {
         e.storage()
@@ -63,11 +69,27 @@ impl Token {
             .set(&PERMISSION_MANAGER_KEY, &permission_manager);
     }
 
+    /// Set the redemption (redemption contract).
+    ///
+    /// # Arguments
+    ///
+    /// * `redemption` - The address of the redemption contract.
+    ///
     #[only_owner]
     pub fn set_redemption(e: &Env, redemption: Address) {
         e.storage().instance().set(&REDEMPTION_KEY, &redemption);
     }
 
+    /// Assert that the idempotency key is not used.
+    ///
+    /// # Arguments
+    ///
+    /// * `idempotency_key` - The idempotency key. It is used to prevent duplicate calls to the same function. It is locked for 7 days.
+    ///
+    /// # Errors
+    ///
+    /// The idempotency key must not be used.
+    ///
     fn assert_idempotency_key_not_used(e: &Env, idempotency_key: &String) {
         let idempotency_key_already_used: bool = e
             .storage()
@@ -92,6 +114,20 @@ impl Token {
         Self::assert_has_role(e, &caller, &MINTER_ROLE);
     }
 
+    /// Mint tokens to an account.
+    ///
+    /// # Arguments
+    ///
+    /// * `account` - The address of the account to mint tokens to.
+    /// * `amount` - The amount of tokens to mint.
+    /// * `caller` - The address of the caller.
+    ///
+    /// # Errors
+    ///
+    /// The caller must have the MINTER_ROLE.
+    /// The account must have the WHITELISTED_ROLE.
+    /// The amount must be greater than zero.
+    ///
     #[when_not_paused]
     pub fn mint(e: &Env, account: Address, amount: i128, caller: Address) {
         Self::auth_mint(e, caller);
@@ -100,6 +136,22 @@ impl Token {
         Base::mint(e, &account, amount);
     }
 
+    /// Mint tokens to a batch of accounts.
+    ///
+    /// # Arguments
+    ///
+    /// * `operations` - The operations to mint tokens to.
+    /// * `caller` - The address of the caller.
+    /// * `idempotency_key` - The idempotency key. It is used to prevent duplicate calls to the same function. It is locked for 7 days.
+    ///
+    /// # Errors
+    ///
+    /// The caller must have the MINTER_ROLE.
+    /// The idempotency key must not be used.
+    /// The batch must not be empty.
+    /// All accounts must have the WHITELISTED_ROLE.
+    /// All amounts must be greater than zero.
+    ///
     #[when_not_paused]
     pub fn mint_batch(
         e: &Env,
@@ -132,6 +184,19 @@ impl Token {
         emit_burn(e, &account, amount);
     }
 
+    /// Burn tokens from an account.
+    ///
+    /// # Arguments
+    ///
+    /// * `account` - The address of the account to burn tokens from.
+    /// * `amount` - The amount of tokens to burn.
+    /// * `caller` - The address of the caller.
+    ///
+    /// # Errors
+    ///
+    /// The caller must have the BURNER_ROLE.
+    /// The amount must be greater than zero.
+    ///
     #[when_not_paused]
     pub fn burn(e: &Env, account: Address, amount: i128, caller: Address) {
         Self::auth_burn(e, caller);
@@ -139,6 +204,21 @@ impl Token {
         Self::burn_no_auth(e, account, amount);
     }
 
+    /// Burn tokens from a batch of accounts.
+    ///
+    /// # Arguments
+    ///
+    /// * `operations` - The operations to burn tokens from.
+    /// * `caller` - The address of the caller.
+    /// * `idempotency_key` - The idempotency key. It is used to prevent duplicate calls to the same function. It is locked for 7 days.
+    ///
+    /// # Errors
+    ///
+    /// The caller must have the BURNER_ROLE.
+    /// The idempotency key must not be used.
+    /// The batch must not be empty.
+    /// All amounts must be greater than zero.
+    ///
     #[when_not_paused]
     pub fn burn_batch(
         e: &Env,
@@ -159,6 +239,22 @@ impl Token {
         Self::consume_idempotency_key(e, &idempotency_key);
     }
 
+    /// Redeem tokens from an account. The tokens are transferred to the redemption contract. The redemption contract will then burn the tokens.
+    ///
+    /// # Arguments
+    ///
+    /// * `amount` - The amount of tokens to redeem.
+    /// * `caller` - The address of the caller.
+    /// * `idempotency_key` - The idempotency key. It is used to prevent duplicate calls to the same function. It is locked for 7 days.
+    ///
+    /// # Errors
+    ///
+    /// The caller must have the WHITELISTED_ROLE.
+    /// The idempotency key must not be used.
+    /// The amount must be greater than zero.
+    /// The redemption contract must be set.
+    /// The redemption contract must have the WHITELISTED_ROLE.
+    ///
     #[when_not_paused]
     pub fn redeem(e: &Env, amount: i128, caller: Address, idempotency_key: String) {
         assert!(amount > 0, "Redemption amount should be more than zero");
@@ -171,7 +267,7 @@ impl Token {
             .get(&REDEMPTION_KEY)
             .expect("Redemption not set");
         let client: RedemptionClient<'_> = RedemptionClient::new(e, &redemption);
-        Self::assert_has_role(e, &redemption, &WHITELISTED_ROLE); // TODO: remove this
+        Self::assert_has_role(e, &redemption, &WHITELISTED_ROLE);
 
         Base::transfer(e, &caller, &redemption, amount);
         client.on_redeem(
@@ -183,6 +279,20 @@ impl Token {
         Self::consume_idempotency_key(e, &idempotency_key);
     }
 
+    /// Transfer tokens from one account to another.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - The address of the account to transfer tokens from.
+    /// * `to` - The address of the account to transfer tokens to.
+    /// * `amount` - The amount of tokens to transfer.
+    ///
+    /// # Errors
+    ///
+    /// The from account must have the WHITELISTED_ROLE.
+    /// The to account must have the WHITELISTED_ROLE.
+    /// The amount must be greater than zero.
+    ///
     #[when_not_paused]
     pub fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
         Self::assert_has_role(e, &from, &WHITELISTED_ROLE);
@@ -191,6 +301,22 @@ impl Token {
         Base::transfer(e, &from, &to, amount);
     }
 
+    /// Transfer tokens from one account to another. The transfer is idempotent.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - The address of the account to transfer tokens from.
+    /// * `to` - The address of the account to transfer tokens to.
+    /// * `amount` - The amount of tokens to transfer.
+    /// * `idempotency_key` - The idempotency key. It is used to prevent duplicate calls to the same function. It is locked for 7 days.
+    ///
+    /// # Errors
+    ///
+    /// The from account must have the WHITELISTED_ROLE.
+    /// The to account must have the WHITELISTED_ROLE.
+    /// The idempotency key must not be used.
+    /// The amount must be greater than zero.
+    ///
     #[when_not_paused]
     pub fn safe_transfer(
         e: &Env,
@@ -207,10 +333,16 @@ impl Token {
         Self::consume_idempotency_key(e, &idempotency_key);
     }
 
+    /// Get the total supply of tokens.
     pub fn total_supply(e: &Env) -> i128 {
         Base::total_supply(e)
     }
 
+    /// Get the balance of an account.
+    ///
+    /// # Arguments
+    ///
+    /// * `account` - The address of the account to get the balance of.
     pub fn balance(e: &Env, account: Address) -> i128 {
         Base::balance(e, &account)
     }

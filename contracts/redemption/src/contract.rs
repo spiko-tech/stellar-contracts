@@ -76,16 +76,46 @@ impl Redemption {
         assert!(token_set, "Caller should be token contract");
     }
 
+    /// Add a token to the redemption contract. All token contract addresses must be added to the redemption contract.
+    ///
+    /// # Arguments
+    ///
+    /// * `token_contract_address` - The address of the token contract to add.
+    ///
+    /// # Errors
+    ///
+    /// The caller must be the owner.
+    ///
     #[only_owner]
     pub fn add_token(e: &Env, token_contract_address: Address) {
         e.storage().instance().set(&token_contract_address, &true);
     }
 
+    /// Remove a token from the redemption contract.
+    ///
+    /// # Arguments
+    ///
+    /// * `token_contract_address` - The address of the token contract to remove.
+    ///
+    /// # Errors
+    ///
+    /// The caller must be the owner.
+    ///
     #[only_owner]
     pub fn remove_token(e: &Env, token_contract_address: Address) {
         e.storage().instance().remove(&token_contract_address);
     }
 
+    /// Set the permission manager (central role management authority).
+    ///
+    /// # Arguments
+    ///
+    /// * `permission_manager` - The address of the permission manager.
+    ///
+    /// # Errors
+    ///
+    /// The caller must be the owner.
+    ///
     #[only_owner]
     pub fn set_permission_manager(e: &Env, permission_manager: Address) {
         e.storage()
@@ -126,6 +156,20 @@ impl Redemption {
             .extend_ttl(redemption_hash, SIXTY_DAY_LEDGERS, SIXTY_DAY_LEDGERS);
     }
 
+    /// On redeem. It is called by a registered token contract just after the tokens are transferred to the redemption contract. The redemption is recorded as pending.
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The address of the token contract.
+    /// * `from` - The address of the account that redeemed the tokens.
+    /// * `amount` - The amount of tokens redeemed.
+    /// * `salt` - The salt used to generate the redemption hash.
+    ///
+    /// # Errors
+    ///
+    /// It must be called by a registered token contract.
+    /// The redemption hash must be in the Null status. The redemption hash is used to prevent duplicate redemptions. All redemptions are unique.
+    ///
     pub fn on_redeem(e: &Env, token: Address, from: Address, amount: i128, salt: String) {
         token.require_auth();
         Self::assert_token_registered(e, &token);
@@ -141,6 +185,20 @@ impl Redemption {
         );
     }
 
+    /// Execute redemptions. It is called by a redemption executor. It will burn the tokens from the redemption contract.
+    ///
+    /// # Arguments
+    ///
+    /// * `caller` - The address of the redemption executor.
+    /// * `operations` - The operations to execute.
+    ///
+    /// # Errors
+    ///
+    /// The caller must have the REDEMPTION_EXECUTOR_ROLE.
+    /// The operations must not be empty.
+    /// All tokens must be registered.
+    /// All redemptions must be in the Pending status.
+    ///
     pub fn execute_redemptions(
         e: &Env,
         caller: Address,
@@ -177,6 +235,22 @@ impl Redemption {
         }
     }
 
+    /// Cancel a redemption. It is called by a redemption executor. It will transfer the tokens back to the from address.
+    ///
+    /// # Arguments
+    ///
+    /// * `caller` - The address of the redemption executor.
+    /// * `token` - The address of the token contract.
+    /// * `from` - The address of the account that redeemed the tokens.
+    /// * `amount` - The amount of tokens redeemed.
+    /// * `salt` - The salt used to generate the redemption hash.
+    ///
+    /// # Errors
+    ///
+    /// The caller must have the REDEMPTION_EXECUTOR_ROLE.
+    /// The token must be registered.
+    /// The redemption must be in the Pending status.
+    ///
     pub fn cancel_redemption(
         e: &Env,
         caller: Address,
