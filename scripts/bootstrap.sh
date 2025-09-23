@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Default to dev environment
-ENVIRONMENT=${1:-dev}
-STELLAR_PROFILE=${2:-nicolas}
-NETWORK=${3:-testnet}
+#### Usage: ./scripts/bootstrap.sh dev nicolas testnet GB7BUX5B2UCSPTBC3UX4O6MRO5OPEZV2CK7FEVONU5Q7WEISLRRNT3S7
 
-# Constant admin/owner address - change this as needed
-ADMIN_ADDRESS="GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H"
+# Default to dev environment
+ENVIRONMENT=${1}
+STELLAR_PROFILE=${2}
+NETWORK=${3}
+RELAYER_ADDRESS=${4}
 
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then
@@ -19,8 +19,14 @@ fi
 # Check if stellar profile provided
 if [ -z "$STELLAR_PROFILE" ]; then
     echo "Error: Stellar profile is required. Please provide a stellar profile."
-    echo "Usage: $0 [ENVIRONMENT] [STELLAR_PROFILE] [NETWORK]"
+    echo "Usage: $0 [ENVIRONMENT] [STELLAR_PROFILE] [NETWORK] [RELAYER_ADDRESS]"
     echo "Example: $0 dev nicolas testnet"
+    exit 1
+fi
+
+# Check if relayer address provided
+if [ -z "$RELAYER_ADDRESS" ]; then
+    echo "Error: Relayer address is required. Please provide a relayer address."
     exit 1
 fi
 
@@ -35,5 +41,5 @@ fi
 cargo test
 stellar contract build
 ./scripts/deploy_contracts.sh $ENVIRONMENT $STELLAR_PROFILE $NETWORK
-./scripts/setup_contracts.sh $ENVIRONMENT $STELLAR_PROFILE $NETWORK
+./scripts/setup_contracts.sh $ENVIRONMENT $STELLAR_PROFILE $NETWORK $RELAYER_ADDRESS
 ./scripts/generate_contract_libraries.sh
