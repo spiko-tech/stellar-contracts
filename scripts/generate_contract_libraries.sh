@@ -1,8 +1,10 @@
 #!/bin/bash
 
+#### Usage: ./scripts/generate_contract_libraries.sh dev testnet
+
 # Default to dev environment
-ENVIRONMENT=${1:-dev}
-NETWORK=${2:-testnet}
+ENVIRONMENT=${1}
+NETWORK=${2}
 
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then

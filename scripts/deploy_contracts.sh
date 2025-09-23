@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# Default to dev environment
-ENVIRONMENT=${1:-dev}
-STELLAR_PROFILE=${2:-nicolas}
-NETWORK=${3:-testnet}
+#### Usage: ./scripts/deploy_contracts.sh dev nicolas testnet
 
-# Constant admin/owner address - change this as needed
-ADMIN_ADDRESS="GBYIQXBKEB655EB3WTRITS6RR5GXEP6SQRBLPREZHNFYKT7WBMTMPR3H"
+# Default to dev environment
+ENVIRONMENT=${1}
+STELLAR_PROFILE=${2}
+NETWORK=${3}
+
+ADMIN_ADDRESS=$(stellar keys public-key $STELLAR_PROFILE)
 
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then
