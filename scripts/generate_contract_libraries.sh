@@ -58,51 +58,6 @@ generate_eutbl_library() {
     { set +x; } 2>/dev/null
 }
 
-generate_ustbl_library() {
-    set -x
-    stellar contract bindings typescript \
-      --network ${NETWORK} \
-      --contract-id $USTBL_ADDRESS \
-      --output-dir .packages/$ENVIRONMENT/ustbl
-    { set +x; } 2>/dev/null
-}
-
-generate_eur_ustbl_library() {
-    set -x
-    stellar contract bindings typescript \
-      --network ${NETWORK} \
-      --contract-id $EUR_USTBL_ADDRESS \
-      --output-dir .packages/$ENVIRONMENT/eur_ustbl
-    { set +x; } 2>/dev/null
-}
-
-generate_uktbl_library() {
-    set -x
-    stellar contract bindings typescript \
-      --network ${NETWORK} \
-      --contract-id $UKTBL_ADDRESS \
-      --output-dir .packages/$ENVIRONMENT/uktbl
-    { set +x; } 2>/dev/null
-}
-
-generate_spkcc_library() {
-    set -x
-    stellar contract bindings typescript \
-      --network ${NETWORK} \
-      --contract-id $SPKCC_ADDRESS \
-      --output-dir .packages/$ENVIRONMENT/spkcc
-    { set +x; } 2>/dev/null
-}
-
-generate_eur_spkcc_library() {
-    set -x
-    stellar contract bindings typescript \
-      --network ${NETWORK} \
-      --contract-id $EUR_SPKCC_ADDRESS \
-      --output-dir .packages/$ENVIRONMENT/eur_spkcc
-    { set +x; } 2>/dev/null
-}
-
 echo "🌍 Environment: $ENVIRONMENT"
 echo "📋 Loaded Addresses:"
 echo "  Permission Manager: $PERMISSION_MANAGER_ADDRESS"
@@ -125,18 +80,3 @@ generate_redemption_library
 
 echo "🔄 Generate EUTBL Library"
 generate_eutbl_library
-
-echo "🔄 Generate USTBL Library"
-add_ustbl_to_redemption
-
-echo "🔄 Generate EUR_USTBL Library"
-generate_eur_ustbl_library
-
-echo "🔄 Generate UKTBL Library"
-add_uktbl_to_redemption
-
-echo "🔄 Generate SPKCC Library"
-generate_spkcc_library
-
-echo "🔄 Generate EUR_SPKCC Library"
-generate_eur_spkcc_library

@@ -1,0 +1,11 @@
+{
+    "tokens": {
+        "EUTBL": { "name": "Spiko EU T-Bills Money Market Fund", "symbol": "EUTBL", "decimals": 5 },
+        "USTBL": { "name": "Spiko US T-Bills Money Market Fund", "symbol": "USTBL", "decimals": 5 },
+        "EUR_USTBL": { "name": "Spiko US T-Bills Money Market Fund (EUR)", "symbol": "eurUSTBL", "decimals": 5 },
+        "UKTBL": { "name": "Spiko UK T-Bills Money Market Fund", "symbol": "UKTBL", "decimals": 5 },
+        "EUR_UKTBL": { "name": "Spiko UK T-Bills Money Market Fund (EUR)", "symbol": "eurUKTBL", "decimals": 5 },
+        "SPKCC": { "name": "Spiko Digital Assets Cash and Carry Fund", "symbol": "SPKCC", "decimals": 5 },
+        "EUR_SPKCC": { "name": "Spiko Digital Assets Cash and Carry Fund (EUR hedged)", "symbol": "eurSPKCC", "decimals": 5 }
+    }
+}
