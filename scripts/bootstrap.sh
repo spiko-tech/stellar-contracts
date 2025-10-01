@@ -42,4 +42,4 @@ cargo test
 stellar contract build
 ./scripts/deploy_contracts.sh $ENVIRONMENT $STELLAR_PROFILE $NETWORK
 ./scripts/setup_contracts.sh $ENVIRONMENT $STELLAR_PROFILE $NETWORK $RELAYER_ADDRESS
-./scripts/generate_contract_libraries.sh
+./scripts/generate_contract_libraries.sh $ENVIRONMENT $NETWORK

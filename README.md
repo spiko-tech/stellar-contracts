@@ -14,12 +14,36 @@ You can verify that it is the right account by looking at the public key
 stellar keys public-key ACCOUNT_NAME
 ```
 
-### Build
+### Deployment Process
+
 ```
+#### Build the contract
 stellar contract build
+
+#### Run the test
+cargo test
+
+#### Create a config file for the desired environment (example: config/staging.json)
+
+#### Deploy the contract
+./scripts/deploy_contracts.sh $ENVIRONMENT $STELLAR_PROFILE $NETWORK
+
+#### Setup the contract
+./scripts/setup_contracts.sh $ENVIRONMENT $STELLAR_PROFILE $NETWORK $RELAYER_ADDRESS
+
+#### (Optional) Generate the typescript libraries
+./scripts/generate_contract_libraries.sh $ENVIRONMENT $NETWORK
 ```
 
-### Deployment
+All these operations can be run by the helper:
+```
+./scripts/bootstrap.sh $ENVIRONMENT $STELLAR_PROFILE $NETWORK $RELAYER_ADDRESS
+```
+
+### Stellar CLI in a nutshell
+
+To deploy some contract
+
 ```
 # PERMISSION MANAGER
 stellar contract deploy \
@@ -112,17 +136,6 @@ stellar contract deploy \
   --symbol eurSPKCC \
   --decimals 5
 ```
-
-### Setup
-
-Use the custom setup script.
-It is mandatory workflow for an operational setup.
-Use it as an inspiration to craft your own command.
-```
-./scripts/setup_contracts.sh dev ACCOUNT_NAME
-```
-
-### Utils
 
 To get the compiled wasm code for integration test
 ```

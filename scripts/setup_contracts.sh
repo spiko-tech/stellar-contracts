@@ -42,6 +42,7 @@ EUTBL_ADDRESS=$(jq -r '.tokens.EUTBL' "$JSON_FILE")
 USTBL_ADDRESS=$(jq -r '.tokens.USTBL' "$JSON_FILE")
 EUR_USTBL_ADDRESS=$(jq -r '.tokens.EUR_USTBL' "$JSON_FILE")
 UKTBL_ADDRESS=$(jq -r '.tokens.UKTBL' "$JSON_FILE")
+EUR_UKTBL_ADDRESS=$(jq -r '.tokens.EUR_UKTBL' "$JSON_FILE")
 SPKCC_ADDRESS=$(jq -r '.tokens.SPKCC' "$JSON_FILE")
 EUR_SPKCC_ADDRESS=$(jq -r '.tokens.EUR_SPKCC' "$JSON_FILE")
 
@@ -102,6 +103,18 @@ add_uktbl_to_redemption() {
       -- \
       add_token \
       --token_contract_address $UKTBL_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+add_eur_uktbl_to_redemption() {
+    set -x
+    stellar contract invoke \
+      --id $REDEMPTION_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      add_token \
+      --token_contract_address $EUR_UKTBL_ADDRESS
     { set +x; } 2>/dev/null
 }
 
@@ -217,6 +230,31 @@ set_redemption_on_uktbl() {
     set -x
     stellar contract invoke \
       --id $UKTBL_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_redemption \
+      --redemption $REDEMPTION_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+
+set_permission_manager_on_eur_uktbl() {
+    set -x
+    stellar contract invoke \
+      --id $EUR_UKTBL_ADDRESS \
+      --source $STELLAR_PROFILE \
+      --network $NETWORK \
+      -- \
+      set_permission_manager \
+      --permission_manager $PERMISSION_MANAGER_ADDRESS
+    { set +x; } 2>/dev/null
+}
+
+set_redemption_on_eur_uktbl() {
+    set -x
+    stellar contract invoke \
+      --id $EUR_UKTBL_ADDRESS \
       --source $STELLAR_PROFILE \
       --network $NETWORK \
       -- \
@@ -371,6 +409,9 @@ add_eur_ustbl_to_redemption
 echo "---> Add Token UKTBL"
 add_uktbl_to_redemption
 
+echo "---> Add Token EUR_UKTBL"
+add_eur_uktbl_to_redemption
+
 echo "---> Add Token SPKCC"
 add_spkcc_to_redemption
 
@@ -400,6 +441,12 @@ echo "---> Set Permission Manager"
 set_permission_manager_on_uktbl
 echo "---> Set Redemption"
 set_redemption_on_uktbl
+
+echo "🔄 Setup EUR_UKTBL"
+echo "---> Set Permission Manager"
+set_permission_manager_on_eur_uktbl
+echo "---> Set Redemption"
+set_redemption_on_eur_uktbl
 
 echo "🔄 Setup SPKCC"
 echo "---> Set Permission Manager"
